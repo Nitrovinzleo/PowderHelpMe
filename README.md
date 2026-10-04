@@ -20,7 +20,7 @@
 - **"Follow" Button on Every Profile** : Subscribe to any summoner profile with a single click.
 - **Live Status Overview** : Dedicated section in the sidebar menu listing all followed players with rank, win rate, and **live status** (🟢 In Game with champion name & elapsed match time, or ⚪ Offline / Idle).
 
-### 3. 📊 U.GG Style Summoner Profile & Statistics
+### 3. 📊 Summoner Profile & Statistics
 - **Ranked Solo/Duo & Flex Cards** : LP display, win/loss counters, and win rate percentage.
 - **Top Champions** : Detailed KDA ratios (Kills/Deaths/Assists) and win rates per champion.
 - **Match History** : Color-coded match cards (Blue Win / Red Loss) showing champion level, CS/min, KDA ratio, and full 6-item + trinket grid.
