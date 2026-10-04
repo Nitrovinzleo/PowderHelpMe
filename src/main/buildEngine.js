@@ -5,22 +5,22 @@
 
 const ITEMS_DATABASE = {
   antiHeal: [
-    { id: 3076, name: "BramblemVest / Thornmail", category: "Armor", icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/3075.png", reason: "Anti-Soin vs Lourde régénération physique" },
-    { id: 3123, name: "Executioner's Calling / Mortal Reminder", category: "AD", icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/3033.png", reason: "Anti-Soin AD vs Soigneurs ennemi" },
-    { id: 3916, name: "Oblivion Orb / Morellonomicon", category: "AP", icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/3165.png", reason: "Anti-Soin AP vs Champions à soin rapide" }
+    { id: 3076, name: "Bramble Vest / Thornmail", category: "Armor", icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/3075.png", reason: "Grievous Wounds vs Heavy Physical Regen" },
+    { id: 3123, name: "Executioner's Calling / Mortal Reminder", category: "AD", icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/3033.png", reason: "AD Grievous Wounds vs Enemy Healers" },
+    { id: 3916, name: "Oblivion Orb / Morellonomicon", category: "AP", icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/3165.png", reason: "AP Grievous Wounds vs Fast Healing Champions" }
   ],
   magicResist: [
-    { id: 3156, name: "Maw of Malmortius / Hexdrinker", category: "AD", icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/3156.png", reason: "Bouclier anti-burst Magique (VS 3+ AP)" },
-    { id: 2502, name: "Kaenic Rookern", category: "Tank", icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/2502.png", reason: "Protection Magique ultime vs Compos AP" },
-    { id: 3157, name: "Zhonya's Hourglass", category: "AP", icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/3157.png", reason: "Stase temporelle vs Dégâts lourds" }
+    { id: 3156, name: "Maw of Malmortius / Hexdrinker", category: "AD", icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/3156.png", reason: "Anti-Magic Burst Shield (VS 3+ AP)" },
+    { id: 2502, name: "Kaenic Rookern", category: "Tank", icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/2502.png", reason: "Ultimate Magic Protection vs AP Comps" },
+    { id: 3157, name: "Zhonya's Hourglass", category: "AP", icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/3157.png", reason: "Stasis vs Heavy Burst Damage" }
   ],
   armorPen: [
-    { id: 3036, name: "Lord Dominik's Regards", category: "AD", icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/3036.png", reason: "Pénétration d'armure vs Tanks lourds" },
-    { id: 3135, name: "Void Staff / Cryptbloom", category: "AP", icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/3135.png", reason: "Pénétration magique vs Résistance magique" }
+    { id: 3036, name: "Lord Dominik's Regards", category: "AD", icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/3036.png", reason: "Armor Penetration vs Heavy Tanks" },
+    { id: 3135, name: "Void Staff / Cryptbloom", category: "AP", icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/3135.png", reason: "Magic Penetration vs Magic Resist" }
   ],
   utility: [
-    { id: 3026, name: "Guardian Angel", category: "AD", icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/3026.png", reason: "Seconde chance en fin de partie" },
-    { id: 4637, name: "Rabadon's Deathcap", category: "AP", icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/3089.png", reason: "Multiplicateur de puissance AP majeur" }
+    { id: 3026, name: "Guardian Angel", category: "AD", icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/3026.png", reason: "Second chance in late game teamfights" },
+    { id: 4637, name: "Rabadon's Deathcap", category: "AP", icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/3089.png", reason: "Major AP Power Multiplier" }
   ]
 };
 
@@ -39,7 +39,6 @@ function analyzeBuildRecommendations(allPlayers, activePlayerName) {
   let heavyHealerCount = 0;
   let apCount = 0;
   let adCount = 0;
-  let tankCount = 0;
 
   enemyTeam.forEach(enemy => {
     const champ = enemy.championName || '';
@@ -58,36 +57,36 @@ function analyzeBuildRecommendations(allPlayers, activePlayerName) {
   // 1. Anti-Heal Priority
   if (heavyHealerCount > 0) {
     suggestions.push({
-      title: "Anti-Soin Prioritaire",
+      title: "Priority Anti-Heal",
       tag: "URGENT",
       item: ITEMS_DATABASE.antiHeal[1],
-      description: `${heavyHealerCount} champion(s) avec forte régénération détecté(s) (ex: ${enemyTeam.map(e => e.championName).filter(c => HEAVY_HEALERS.some(h => c.toLowerCase().includes(h.toLowerCase()))).join(', ')})`
+      description: `${heavyHealerCount} high-regen champion(s) detected (e.g. ${enemyTeam.map(e => e.championName).filter(c => HEAVY_HEALERS.some(h => c.toLowerCase().includes(h.toLowerCase()))).join(', ')})`
     });
   }
 
   // 2. Magic Resist Defense
   if (apCount >= 3) {
     suggestions.push({
-      title: "Défense Anti-AP",
+      title: "Anti-AP Defense",
       tag: "DEFENSE",
       item: ITEMS_DATABASE.magicResist[0],
-      description: `Compo ennemie fortement AP (${apCount}/5 champions magiques)`
+      description: `Heavy AP enemy comp (${apCount}/5 magic champions)`
     });
   } else {
     suggestions.push({
-      title: "Pénétration & Burst",
-      tag: "OFFENSIF",
+      title: "Penetration & Burst",
+      tag: "OFFENSIVE",
       item: ITEMS_DATABASE.armorPen[0],
-      description: "Optimisez vos dégâts bruts sur les cibles prioritaires"
+      description: "Maximize raw burst damage on priority targets"
     });
   }
 
   // 3. Late Game / Clutch Item
   suggestions.push({
-    title: "Survie Fin de Partie",
-    tag: "UTILITÉ",
+    title: "Late Game Survival",
+    tag: "UTILITY",
     item: ITEMS_DATABASE.utility[0],
-    description: "Protection contre les assassinations et teamfights de fin de match"
+    description: "Protection against assassinations in end-game teamfights"
   });
 
   return {
@@ -106,22 +105,22 @@ function getDefaultBuildAdvice() {
     heavyHealerDetected: false,
     suggestions: [
       {
-        title: "Pénétration d'Armure",
+        title: "Armor Penetration",
         tag: "CORE",
         item: ITEMS_DATABASE.armorPen[0],
-        description: "Augmente vos dégâts contre les cibles armurées"
+        description: "Increases physical damage against armored targets"
       },
       {
-        title: "Protection Anti-Burst",
+        title: "Anti-Burst Shield",
         tag: "DEFENSE",
         item: ITEMS_DATABASE.magicResist[0],
-        description: "Bouclier magique réactif en escarmouche"
+        description: "Reactive magic shield in skirmishes"
       },
       {
-        title: "Anti-Soin Situatif",
-        tag: "SITUATIF",
+        title: "Situational Anti-Heal",
+        tag: "SITUATIONAL",
         item: ITEMS_DATABASE.antiHeal[1],
-        description: "À acheter si l'équipe adverse possède des soins importants"
+        description: "Purchase if enemy team exhibits heavy healing"
       }
     ]
   };

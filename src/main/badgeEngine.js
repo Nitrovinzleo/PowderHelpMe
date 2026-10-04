@@ -10,56 +10,56 @@ function computeBadges(stats) {
   if (csPerMin >= 8.5) {
     badges.push({
       id: 'cs_god',
-      title: 'Monstre du CS',
+      title: 'CS Monster',
       category: 'gold',
       icon: 'coins',
-      desc: `Moyenne impressionnante de ${csPerMin.toFixed(1)} CS/min`
+      desc: `Impressive average of ${csPerMin.toFixed(1)} CS/min`
     });
   } else if (csPerMin >= 7.0) {
     badges.push({
       id: 'cs_pro',
-      title: 'Solide Farmeur',
+      title: 'Solid Farmer',
       category: 'purple',
       icon: 'coins',
-      desc: `Bonne gestion des vagues (${csPerMin.toFixed(1)} CS/min)`
+      desc: `Great wave management (${csPerMin.toFixed(1)} CS/min)`
     });
   }
 
   if (dpm >= 750) {
     badges.push({
       id: 'dpm_monster',
-      title: 'Machine à Dégâts',
+      title: 'Damage Machine',
       category: 'purple',
       icon: 'zap',
-      desc: `Énorme présence en combat (${Math.round(dpm)} DPM)`
+      desc: `Huge teamfight presence (${Math.round(dpm)} DPM)`
     });
   } else if (dpm >= 550) {
     badges.push({
       id: 'dpm_active',
-      title: 'Gros Dégâts',
+      title: 'Heavy Hitter',
       category: 'blue',
       icon: 'zap',
-      desc: `Dégâts constants (${Math.round(dpm)} DPM)`
+      desc: `Consistent damage output (${Math.round(dpm)} DPM)`
     });
   }
 
   if (kda >= 4.0) {
     badges.push({
       id: 'unkillable',
-      title: 'Insubmersible',
+      title: 'Unkillable',
       category: 'gold',
       icon: 'crown',
-      desc: `Ratio KDA impressionnant de ${kda.toFixed(2)}`
+      desc: `Outstanding ${kda.toFixed(2)} KDA ratio`
     });
   }
 
   if (winrate7d >= 65) {
     badges.push({
       id: 'hot_streak',
-      title: 'Sur une Vague',
+      title: 'On a Streak',
       category: 'gold',
       icon: 'flame',
-      desc: `${winrate7d}% de winrate sur les 7 derniers jours`
+      desc: `${winrate7d}% win rate over the last 7 days`
     });
   }
 
@@ -69,17 +69,17 @@ function computeBadges(stats) {
       title: 'One-Trick Pony',
       category: 'purple',
       icon: 'target',
-      desc: `Joue son main champion ${mainChampPickrate}% du temps`
+      desc: `Plays main champion ${mainChampPickrate}% of games`
     });
   }
 
   if (visionScorePerMin >= 1.5) {
     badges.push({
       id: 'vision_master',
-      title: 'Maître de la Vision',
+      title: 'Vision Master',
       category: 'blue',
       icon: 'eye',
-      desc: `Contrôle de carte supérieur (${visionScorePerMin.toFixed(1)} Vision/min)`
+      desc: `Superior map control (${visionScorePerMin.toFixed(1)} Vision/min)`
     });
   }
 
@@ -87,10 +87,10 @@ function computeBadges(stats) {
   if (badges.length === 0) {
     badges.push({
       id: 'challenger_mindset',
-      title: 'Combattant Régulier',
+      title: 'Consistent Warrior',
       category: 'blue',
       icon: 'swords',
-      desc: 'Joueur actif en partie classée'
+      desc: 'Active ranked competitor'
     });
   }
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,191 +10,330 @@
 </head>
 <body>
   <div class="dashboard-root">
-    <!-- Titlebar & Search Bar -->
-    <div class="titlebar">
-      <div class="titlebar-brand">
-        <img src="../assets/logo.png" style="width: 38px; height: 38px; border-radius: 8px; border: 2px solid var(--powder-cyan); object-fit: cover;" alt="Logo">
-        <span class="titlebar-title">PowderHelpMe.exe</span>
+    <!-- Left Sidebar Navigation -->
+    <div class="sidebar-nav">
+      <div class="sidebar-brand">
+        <img src="../assets/logo.png" class="sidebar-logo" alt="Powder Logo">
+        <span class="sidebar-title">PowderHelpMe</span>
       </div>
 
-      <!-- U.GG Style Search Bar with Seamless Region Select -->
-      <div class="search-box-container">
-        <select id="search-region" class="region-select">
-          <option value="EUW" selected>EUW</option>
-          <option value="NA">NA</option>
-          <option value="KR">KR</option>
-          <option value="EUNE">EUNE</option>
-        </select>
-        <input type="text" id="search-input" class="search-input" placeholder="Rechercher un invocateur (ex: Lesbian princess#UwU ou RiotId#Tag)">
-        <button id="search-btn" class="search-btn" title="Rechercher">
-          <i data-lucide="search" style="width: 14px; height: 14px;"></i>
-        </button>
+      <div class="sidebar-menu">
+        <div class="sidebar-item active" data-view="view-home">
+          <i data-lucide="home" style="width: 16px; height: 16px;"></i>
+          <span>Home</span>
+        </div>
+
+        <div class="sidebar-item" data-view="view-champions">
+          <i data-lucide="skull" style="width: 16px; height: 16px;"></i>
+          <span>Champions</span>
+          <i data-lucide="chevron-down" class="menu-arrow" style="width: 12px; height: 12px;"></i>
+        </div>
+
+        <div class="sidebar-item" data-view="view-profile">
+          <i data-lucide="user" style="width: 16px; height: 16px;"></i>
+          <span>My Profile</span>
+        </div>
+
+        <div class="sidebar-item" data-view="view-follows">
+          <i data-lucide="users" style="width: 16px; height: 16px;"></i>
+          <span>My Follows</span>
+        </div>
+
+        <div class="sidebar-item" data-view="view-leaderboards">
+          <i data-lucide="trophy" style="width: 16px; height: 16px;"></i>
+          <span>Leaderboards</span>
+        </div>
+
+        <div class="sidebar-item" data-view="view-livegames">
+          <i data-lucide="video" style="width: 16px; height: 16px;"></i>
+          <span>Live Games</span>
+        </div>
       </div>
 
-      <div class="titlebar-controls">
-        <button id="account-btn" class="pill-button">
+      <!-- Sidebar Footer Account Button -->
+      <div class="sidebar-footer">
+        <button id="account-btn" class="pill-button sidebar-account-btn">
           <i data-lucide="user-cog" style="width: 14px; height: 14px;"></i>
-          <span>Mon Compte</span>
-        </button>
-        <button id="btn-minimize" class="titlebar-btn" title="Réduire">
-          <i data-lucide="minus" style="width: 14px; height: 14px;"></i>
-        </button>
-        <button id="btn-close" class="titlebar-btn close" title="Fermer">
-          <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+          <span>My Account</span>
         </button>
       </div>
     </div>
 
-    <!-- U.GG Style Header Banner -->
-    <div class="ugg-header-banner">
-      <div class="profile-main-info">
-        <div class="avatar-wrapper">
-          <img id="prof-avatar" src="../assets/logo.png" class="profile-avatar-img" alt="Avatar">
-          <span id="prof-level" class="level-badge">707</span>
+    <!-- Main Content Wrapper -->
+    <div class="main-content-wrapper">
+      <!-- Titlebar Header -->
+      <div class="titlebar">
+        <!-- Search Bar in Header -->
+        <div class="search-box-container">
+          <select id="search-region" class="region-select">
+            <option value="EUW" selected>EUW</option>
+            <option value="NA">NA</option>
+            <option value="KR">KR</option>
+            <option value="EUNE">EUNE</option>
+          </select>
+          <input type="text" id="search-input" class="search-input" placeholder="Search Summoner (e.g. Lesbian princess#UwU)">
+          <button id="search-btn" class="search-btn" title="Search">
+            <i data-lucide="search" style="width: 14px; height: 14px;"></i>
+          </button>
         </div>
-        <div>
-          <div class="summoner-name-title">
-            <span id="prof-name">Lesbian princess</span>
-            <span id="prof-tag" class="tag-badge">#UwU</span>
-          </div>
-          <div id="prof-ladder" class="ladder-rank">Ladder Rank <strong>1,449</strong> (top 0.0398%)</div>
+
+        <div class="titlebar-controls">
+          <button id="btn-minimize" class="titlebar-btn" title="Minimize">
+            <i data-lucide="minus" style="width: 14px; height: 14px;"></i>
+          </button>
+          <button id="btn-close" class="titlebar-btn close" title="Close">
+            <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+          </button>
         </div>
       </div>
 
-      <div>
-        <button id="update-stats-btn" class="update-btn">
-          <i data-lucide="rotate-cw" style="width: 14px; height: 14px;"></i>
-          <span>Actualiser</span>
-        </button>
-      </div>
-    </div>
+      <!-- VIEW 1: HOME WELCOME LANDING PAGE -->
+      <div id="view-home" class="app-view active">
+        <!-- Powder Hero Card -->
+        <div class="powder-hero-card">
+          <div class="powder-hero-content">
+            <div class="hero-badge">
+              <i data-lucide="sparkles" style="width: 12px; height: 12px;"></i>
+              <span>LEAGUE OF LEGENDS TACTICAL ASSISTANT</span>
+            </div>
+            <h1 class="hero-title">Powder Will Help You!</h1>
+            <p class="hero-subtitle">
+              Analyze real-time League of Legends stats, discover optimal champion builds, track ranked ladder progress, and boost your win rate with Powder's help.
+            </p>
 
-    <!-- Profile Subnav Tabs -->
-    <div class="profile-subnav">
-      <div class="subnav-item active" data-tab="tab-overview">
-        <i data-lucide="layout-dashboard" style="width: 14px; height: 14px;"></i>
-        <span>Overview</span>
-      </div>
-      <div class="subnav-item" data-tab="tab-champs">
-        <i data-lucide="bar-chart-2" style="width: 14px; height: 14px;"></i>
-        <span>Champion Stats</span>
-      </div>
-      <div class="subnav-item" data-tab="tab-tierlist">
-        <i data-lucide="trophy" style="width: 14px; height: 14px;"></i>
-        <span>PLUS Tier List</span>
-      </div>
-      <div class="subnav-item" data-tab="tab-lp">
-        <i data-lucide="trending-up" style="width: 14px; height: 14px;"></i>
-        <span>LP History</span>
-      </div>
-    </div>
+            <!-- Hero Big Search Bar -->
+            <div class="hero-search-box">
+              <select id="hero-search-region" class="region-select hero-region">
+                <option value="EUW" selected>EUW</option>
+                <option value="NA">NA</option>
+                <option value="KR">KR</option>
+                <option value="EUNE">EUNE</option>
+              </select>
+              <input type="text" id="hero-search-input" class="hero-input" placeholder="Enter Riot ID (e.g. Lesbian princess#UwU)">
+              <button id="hero-search-btn" class="hero-btn">
+                <i data-lucide="search" style="width: 16px; height: 16px;"></i>
+                <span>Analyze</span>
+              </button>
+            </div>
 
-    <!-- Main Profile Grid Layout -->
-    <div class="ugg-grid-layout">
-      <!-- Left Column (Rank Cards & Top Champions) -->
-      <div class="left-col">
-        <!-- Ranked Solo Card -->
-        <div class="rank-card">
-          <div class="rank-header">
-            <span>Ranked Solo</span>
-            <span id="solo-wr-text" style="color: var(--powder-cyan);">51% Win Rate</span>
-          </div>
-          <div class="rank-tier-row">
-            <img id="solo-tier-img" src="https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/master.png" class="rank-emblem" alt="Master Tier" onerror="this.src='../assets/logo.png'">
-            <div>
-              <div id="solo-tier-name" class="tier-name">Master</div>
-              <div id="solo-lp" class="lp-text">1,508 LP • 689W 651L</div>
+            <!-- Quick Suggestions -->
+            <div class="quick-tags">
+              <span class="quick-label">Try:</span>
+              <button class="tag-chip" data-search="Lesbian princess#UwU">Lesbian princess#UwU</button>
+              <button class="tag-chip" data-search="Faker#KR1">Faker#KR1</button>
+              <button class="tag-chip" data-search="Agurin#EUW">Agurin#EUW</button>
             </div>
           </div>
+
+          <!-- Powder Full Artwork -->
+          <div class="powder-image-container">
+            <img src="../assets/powder_full.png" class="powder-artwork-img" alt="Powder Arcane">
+          </div>
         </div>
 
-        <!-- Ranked Flex Card -->
-        <div class="rank-card">
-          <div class="rank-header">
-            <span>Ranked Flex</span>
-            <span id="flex-wr-text" style="color: var(--text-muted);">20% Win Rate</span>
+        <!-- Features Grid -->
+        <div class="home-features-grid">
+          <div class="feature-card">
+            <div class="feature-icon"><i data-lucide="skull" style="width: 20px; height: 20px;"></i></div>
+            <h3>Champion Stats</h3>
+            <p>Check win rates, KDA ratios, and detailed builds for every champion.</p>
           </div>
-          <div class="rank-tier-row">
-            <img id="flex-tier-img" src="https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/platinum.png" class="rank-emblem" alt="Flex Tier" onerror="this.src='../assets/logo.png'">
+
+          <div class="feature-card">
+            <div class="feature-icon"><i data-lucide="users" style="width: 20px; height: 20px;"></i></div>
+            <h3>My Follows</h3>
+            <p>Follow your friends and pros to see live game status in real-time.</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon"><i data-lucide="trophy" style="width: 20px; height: 20px;"></i></div>
+            <h3>Leaderboards</h3>
+            <p>Track live Challenger, Grandmaster, and Master leaderboards.</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon"><i data-lucide="shield-check" style="width: 20px; height: 20px;"></i></div>
+            <h3>OriBot Verification</h3>
+            <p>Log in securely without passwords by equipping a profile icon in-game.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 2: PROFILE PAGE (U.GG LAYOUT) -->
+      <div id="view-profile" class="app-view">
+        <!-- U.GG Style Header Banner -->
+        <div class="ugg-header-banner">
+          <div class="profile-main-info">
+            <div class="avatar-wrapper">
+              <img id="prof-avatar" src="../assets/logo.png" class="profile-avatar-img" alt="Avatar">
+              <span id="prof-level" class="level-badge">707</span>
+            </div>
             <div>
-              <div id="flex-tier-name" class="tier-name">Platinum 3</div>
-              <div id="flex-lp" class="lp-text">60 LP • 1W 4L</div>
+              <div class="summoner-name-title">
+                <span id="prof-name">Lesbian princess</span>
+                <span id="prof-tag" class="tag-badge">#UwU</span>
+              </div>
+              <div id="prof-ladder" class="ladder-rank">Ladder Rank <strong>1,449</strong> (top 0.0398%)</div>
             </div>
           </div>
+
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <button id="toggle-follow-btn" class="pill-button" style="background: rgba(0, 168, 232, 0.15); border-color: var(--powder-cyan); color: var(--powder-cyan);">
+              <i data-lucide="user-plus" style="width: 14px; height: 14px;"></i>
+              <span id="follow-btn-text">Follow</span>
+            </button>
+            <button id="update-stats-btn" class="update-btn">
+              <i data-lucide="rotate-cw" style="width: 14px; height: 14px;"></i>
+              <span>Refresh</span>
+            </button>
+          </div>
         </div>
 
-        <!-- Top Champions Table -->
-        <div class="rank-card">
-          <div class="rank-header">
+        <!-- Profile Subnav Tabs -->
+        <div class="profile-subnav">
+          <div class="subnav-item active" data-tab="tab-overview">
+            <i data-lucide="layout-dashboard" style="width: 14px; height: 14px;"></i>
+            <span>Overview</span>
+          </div>
+          <div class="subnav-item" data-tab="tab-champs">
+            <i data-lucide="bar-chart-2" style="width: 14px; height: 14px;"></i>
             <span>Champion Stats</span>
-            <span style="font-size: 10px; color: var(--powder-cyan);">S14 Ranked</span>
           </div>
-          <div id="top-champs-list">
-            <!-- Top champs dynamically generated -->
+          <div class="subnav-item" data-tab="tab-tierlist">
+            <i data-lucide="trophy" style="width: 14px; height: 14px;"></i>
+            <span>PLUS Tier List</span>
+          </div>
+          <div class="subnav-item" data-tab="tab-lp">
+            <i data-lucide="trending-up" style="width: 14px; height: 14px;"></i>
+            <span>LP History</span>
           </div>
         </div>
 
-        <!-- Recently Played With -->
-        <div class="rank-card">
-          <div class="rank-header">
-            <span>Recently Played With</span>
-            <span style="font-size: 10px;">Last 20 Games</span>
+        <!-- Main Profile Grid Layout -->
+        <div class="ugg-grid-layout">
+          <!-- Left Column (Rank Cards & Top Champions) -->
+          <div class="left-col">
+            <!-- Ranked Solo Card -->
+            <div class="rank-card">
+              <div class="rank-header">
+                <span>Ranked Solo</span>
+                <span id="solo-wr-text" style="color: var(--powder-cyan);">51% Win Rate</span>
+              </div>
+              <div class="rank-tier-row">
+                <img id="solo-tier-img" src="https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/master.png" class="rank-emblem" alt="Master Tier" onerror="this.src='../assets/logo.png'">
+                <div>
+                  <div id="solo-tier-name" class="tier-name">Master</div>
+                  <div id="solo-lp" class="lp-text">1,508 LP • 689W 651L</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Ranked Flex Card -->
+            <div class="rank-card">
+              <div class="rank-header">
+                <span>Ranked Flex</span>
+                <span id="flex-wr-text" style="color: var(--text-muted);">20% Win Rate</span>
+              </div>
+              <div class="rank-tier-row">
+                <img id="flex-tier-img" src="https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/platinum.png" class="rank-emblem" alt="Flex Tier" onerror="this.src='../assets/logo.png'">
+                <div>
+                  <div id="flex-tier-name" class="tier-name">Platinum 3</div>
+                  <div id="flex-lp" class="lp-text">60 LP • 1W 4L</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Top Champions Table -->
+            <div class="rank-card">
+              <div class="rank-header">
+                <span>Champion Stats</span>
+                <span style="font-size: 10px; color: var(--powder-cyan);">S14 Ranked</span>
+              </div>
+              <div id="top-champs-list">
+                <!-- Top champs dynamically generated -->
+              </div>
+            </div>
+
+            <!-- Recently Played With -->
+            <div class="rank-card">
+              <div class="rank-header">
+                <span>Recently Played With</span>
+                <span style="font-size: 10px;">Last 20 Games</span>
+              </div>
+              <div id="recently-played-list">
+                <!-- Teammates list dynamically generated -->
+              </div>
+            </div>
           </div>
-          <div id="recently-played-list">
-            <!-- Teammates list dynamically generated -->
+
+          <!-- Right Column (Match History) -->
+          <div class="right-col">
+            <!-- TAB 1: OVERVIEW & MATCH HISTORY -->
+            <div id="tab-overview" class="tab-pane active">
+              <!-- Summary Bar -->
+              <div class="match-summary-bar">
+                <div>
+                  <span style="font-weight: 800; font-size: 14px; color: var(--text-main);">Recent Matches</span>
+                  <span id="summary-wr" style="font-size: 12px; color: var(--powder-cyan); font-weight: 700; margin-left: 10px;">40% WR (Last 20)</span>
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted);">
+                  Average KDA: <strong id="summary-kda" style="color: var(--text-main);">1.73 KDA</strong>
+                </div>
+              </div>
+
+              <!-- Match Cards List -->
+              <div id="match-cards-container" style="display: flex; flex-direction: column; gap: 10px;">
+                <!-- Match cards generated dynamically -->
+              </div>
+            </div>
+
+            <!-- TAB 2: CHAMPION STATS BREAKDOWN -->
+            <div id="tab-champs" class="tab-pane">
+              <div class="dashboard-card">
+                <div class="card-title">Detailed Champion Statistics</div>
+                <div id="champs-detail-table">
+                  <!-- Detail list -->
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 3: PERSONAL TIER LIST -->
+            <div id="tab-tierlist" class="tab-pane">
+              <div class="dashboard-card">
+                <div class="card-title">Personal Tier List (Top Champions)</div>
+                <div id="tierlist-container" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;">
+                  <!-- Tier list cards -->
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 4: LP HISTORY CHART -->
+            <div id="tab-lp" class="tab-pane">
+              <div class="dashboard-card">
+                <div class="card-title">LP Trajectory (Last 7 Days)</div>
+                <div class="chart-container">
+                  <canvas id="lpChart"></canvas>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Right Column (Match History) -->
-      <div class="right-col">
-        <!-- TAB 1: OVERVIEW & MATCH HISTORY -->
-        <div id="tab-overview" class="tab-pane active">
-          <!-- Summary Bar -->
-          <div class="match-summary-bar">
-            <div>
-              <span style="font-weight: 800; font-size: 14px; color: var(--text-main);">Derniers Matchs</span>
-              <span id="summary-wr" style="font-size: 12px; color: var(--powder-cyan); font-weight: 700; margin-left: 10px;">40% WR (Last 20)</span>
-            </div>
-            <div style="font-size: 12px; color: var(--text-muted);">
-              KDA Moyen: <strong id="summary-kda" style="color: var(--text-main);">1.73 KDA</strong>
-            </div>
+      <!-- VIEW 3: MES FOLLOWS (RECAPITULATIF JOUEURS SUIVIS & STATUTS EN DIRECT) -->
+      <div id="view-follows" class="app-view">
+        <div class="follows-header-banner">
+          <div>
+            <h2 style="font-size: 22px; font-weight: 800; color: #fff; margin: 0 0 4px 0;">Followed Summoners</h2>
+            <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Live status overview of your friends, pros, and rivals.</p>
           </div>
-
-          <!-- Match Cards List -->
-          <div id="match-cards-container" style="display: flex; flex-direction: column; gap: 10px;">
-            <!-- Match cards generated dynamically -->
+          <div style="font-size: 12px; color: var(--powder-cyan); font-weight: 800; background: rgba(0, 168, 232, 0.15); padding: 6px 14px; border-radius: 20px; border: 1px solid var(--powder-cyan);">
+            <span id="follows-count-badge">2 Followed Player(s)</span>
           </div>
         </div>
 
-        <!-- TAB 2: CHAMPION STATS BREAKDOWN -->
-        <div id="tab-champs" class="tab-pane">
-          <div class="dashboard-card">
-            <div class="card-title">Statistiques Détaillées des Champions</div>
-            <div id="champs-detail-table">
-              <!-- Detail list -->
-            </div>
-          </div>
-        </div>
-
-        <!-- TAB 3: PERSONAL TIER LIST -->
-        <div id="tab-tierlist" class="tab-pane">
-          <div class="dashboard-card">
-            <div class="card-title">Personal Tier List (Vos meilleurs champions)</div>
-            <div id="tierlist-container" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;">
-              <!-- Tier list cards -->
-            </div>
-          </div>
-        </div>
-
-        <!-- TAB 4: LP HISTORY CHART -->
-        <div id="tab-lp" class="tab-pane">
-          <div class="dashboard-card">
-            <div class="card-title">Évolution des LP (7 Derniers Jours)</div>
-            <div class="chart-container">
-              <canvas id="lpChart"></canvas>
-            </div>
-          </div>
+        <div class="follows-cards-container" id="follows-list-container">
+          <!-- Follow cards generated dynamically -->
         </div>
       </div>
     </div>
@@ -205,26 +344,26 @@
     <div class="modal-box">
       <div class="modal-title">
         <i data-lucide="shield-check" style="width: 18px; height: 18px;"></i>
-        <span>Connexion & Vérification (Style OriBot)</span>
+        <span>Account Login & Verification (OriBot Style)</span>
       </div>
       
       <div id="oribot-step-1">
         <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5;">
-          Entrez votre pseudonyme Riot ID (GameName #Tag). Vous allez générer un défi d'icône de profil pour prouver que ce compte vous appartient !
+          Enter your Riot ID (GameName #TagLine). Generate an icon challenge to prove account ownership without passwords!
         </p>
 
         <div class="form-group">
-          <label class="form-label">Nom Invocateur (Game Name)</label>
-          <input type="text" id="acc-gamename" class="form-input" placeholder="ex: Lesbian princess">
+          <label class="form-label">Summoner Name (Game Name)</label>
+          <input type="text" id="acc-gamename" class="form-input" placeholder="e.g. Lesbian princess">
         </div>
 
         <div class="form-group">
           <label class="form-label">TagLine (#Tag)</label>
-          <input type="text" id="acc-tagline" class="form-input" placeholder="ex: UwU ou EUW">
+          <input type="text" id="acc-tagline" class="form-input" placeholder="e.g. UwU or EUW">
         </div>
 
         <div class="form-group">
-          <label class="form-label">Région</label>
+          <label class="form-label">Region</label>
           <select id="acc-region" class="form-input">
             <option value="EUW" selected>EUW - Europe West</option>
             <option value="NA">NA - North America</option>
@@ -236,31 +375,31 @@
         <div style="display: flex; gap: 10px; margin-top: 20px;">
           <button id="gen-challenge-btn" class="update-btn" style="flex: 1; background: var(--powder-cyan); color: #000; font-weight: 800; justify-content: center;">
             <i data-lucide="shield-check" style="width: 16px; height: 16px;"></i>
-            <span>Générer le défi OriBot</span>
+            <span>Generate OriBot Challenge</span>
           </button>
-          <button id="close-modal-btn" class="titlebar-btn" style="background: #232a3b; width: auto; padding: 0 16px;">Annuler</button>
+          <button id="close-modal-btn" class="titlebar-btn" style="background: #232a3b; width: auto; padding: 0 16px;">Cancel</button>
         </div>
       </div>
 
       <!-- OriBot Step 2: Change Profile Icon in LoL Client -->
       <div id="oribot-step-2" style="display: none; text-align: center;">
         <div class="edit-badge" style="background: rgba(0, 168, 232, 0.2); color: var(--powder-cyan); font-size: 11px; padding: 4px 10px; margin-bottom: 10px;">
-          Vérification d'icône en cours
+          Icon Verification Pending
         </div>
 
         <p style="font-size: 12px; color: var(--text-main); font-weight: 700; margin-bottom: 12px;">
-          Pour valider l'appartenance de votre compte sans mot de passe :
+          To verify account ownership without passwords:
         </p>
 
         <div style="background: #0d111a; border: 2px dashed var(--powder-cyan); border-radius: 12px; padding: 16px; margin: 12px 0;">
           <img id="challenge-icon-img" src="https://ddragon.leagueoflegends.com/cdn/14.20.1/img/profileicon/23.png" style="width: 72px; height: 72px; border-radius: 12px; border: 2px solid var(--powder-gold); margin-bottom: 8px;">
-          <div id="challenge-icon-name" style="font-weight: 800; font-size: 13px; color: var(--powder-gold);">Icône : Potion Bleue (#23)</div>
+          <div id="challenge-icon-name" style="font-weight: 800; font-size: 13px; color: var(--powder-gold);">Icon: Blue Potion (#23)</div>
         </div>
 
         <ol style="text-align: left; font-size: 11px; color: var(--text-muted); margin: 10px 0 16px 20px; line-height: 1.7;">
-          <li>Ouvrez votre client League of Legends.</li>
-          <li>Allez sur votre profil en jeu et changez votre photo de profil par l'icône ci-dessus.</li>
-          <li>Cliquez sur <strong>"Vérifier la photo de profil"</strong> ci-dessous !</li>
+          <li>Open your League of Legends client.</li>
+          <li>Go to your profile in-game and equip the challenge icon shown above.</li>
+          <li>Click <strong>"Verify Profile Icon"</strong> below!</li>
         </ol>
 
         <div id="verify-status-msg" style="font-size: 11px; font-weight: 700; margin-bottom: 10px; display: none;"></div>
@@ -268,9 +407,9 @@
         <div style="display: flex; gap: 10px;">
           <button id="verify-icon-btn" class="update-btn" style="flex: 1; background: #2ecc71; color: #000; font-weight: 800; justify-content: center;">
             <i data-lucide="key-round" style="width: 16px; height: 16px;"></i>
-            <span>Vérifier la photo de profil</span>
+            <span>Verify Profile Icon</span>
           </button>
-          <button id="back-step1-btn" class="titlebar-btn" style="background: #232a3b; width: auto; padding: 0 16px;">Retour</button>
+          <button id="back-step1-btn" class="titlebar-btn" style="background: #232a3b; width: auto; padding: 0 16px;">Back</button>
         </div>
       </div>
     </div>

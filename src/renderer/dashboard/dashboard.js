@@ -123,7 +123,7 @@ verifyIconBtn.addEventListener('click', async () => {
   const region = accRegion.value || 'EUW';
   const requiredIconId = currentChallenge?.requiredIcon?.id || 23;
 
-  verifyIconBtn.innerHTML = '<i data-lucide="loader-2" class="spin" style="width: 16px; height: 16px;"></i> <span>Vérification en cours...</span>';
+  verifyIconBtn.innerHTML = '<i data-lucide="loader-2" class="spin" style="width: 16px; height: 16px;"></i> <span>Verification pending...</span>';
   if (window.lucide) window.lucide.createIcons();
 
   const result = await ipcRenderer.invoke('verify-account-icon', {
@@ -132,13 +132,13 @@ verifyIconBtn.addEventListener('click', async () => {
     requiredIconId,
     region
   });
-  verifyIconBtn.innerHTML = '<i data-lucide="key-round" style="width: 16px; height: 16px;"></i> <span>Vérifier la photo de profil</span>';
+  verifyIconBtn.innerHTML = '<i data-lucide="key-round" style="width: 16px; height: 16px;"></i> <span>Verify Profile Icon</span>';
   if (window.lucide) window.lucide.createIcons();
 
   if (result.success) {
     verifyStatusMsg.style.display = 'block';
     verifyStatusMsg.style.color = '#2ecc71';
-    verifyStatusMsg.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; gap: 6px;"><i data-lucide="check-circle-2" style="width: 16px; height: 16px;"></i> <span>Compte vérifié avec succès ! Connexion automatique...</span></div>';
+    verifyStatusMsg.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; gap: 6px;"><i data-lucide="check-circle-2" style="width: 16px; height: 16px;"></i> <span>Account verified successfully! Connecting...</span></div>';
     if (window.lucide) window.lucide.createIcons();
 
     setTimeout(() => {
@@ -148,10 +148,195 @@ verifyIconBtn.addEventListener('click', async () => {
   } else {
     verifyStatusMsg.style.display = 'block';
     verifyStatusMsg.style.color = '#e63946';
-    verifyStatusMsg.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; gap: 6px;"><i data-lucide="alert-circle" style="width: 16px; height: 16px;"></i> <span>Icône non détectée. Veuillez équiper la photo de profil dans le client LoL et réessayez !</span></div>';
+    verifyStatusMsg.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; gap: 6px;"><i data-lucide="alert-circle" style="width: 16px; height: 16px;"></i> <span>Icon not detected. Please equip the required profile icon in your LoL client and try again!</span></div>';
     if (window.lucide) window.lucide.createIcons();
   }
 });
+
+// Sidebar Navigation View Switcher
+const sidebarItems = document.querySelectorAll('.sidebar-item');
+const appViews = document.querySelectorAll('.app-view');
+
+sidebarItems.forEach(item => {
+  item.addEventListener('click', () => {
+    const targetViewId = item.getAttribute('data-view');
+    switchView(targetViewId);
+  });
+});
+
+function switchView(viewId) {
+  sidebarItems.forEach(i => {
+    if (i.getAttribute('data-view') === viewId) {
+      i.classList.add('active');
+    } else {
+      i.classList.remove('active');
+    }
+  });
+
+  appViews.forEach(view => {
+    if (view.id === viewId) {
+      view.classList.add('active');
+    } else {
+      view.classList.remove('active');
+    }
+  });
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+// Hero Search Box Handlers
+const heroSearchInput = document.getElementById('hero-search-input');
+const heroSearchRegion = document.getElementById('hero-search-region');
+const heroSearchBtn = document.getElementById('hero-search-btn');
+
+if (heroSearchBtn) {
+  heroSearchBtn.addEventListener('click', () => {
+    const query = heroSearchInput.value.trim();
+    const region = heroSearchRegion.value;
+    if (query) performSearch(query, region);
+  });
+}
+
+if (heroSearchInput) {
+  heroSearchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const query = heroSearchInput.value.trim();
+      const region = heroSearchRegion.value;
+      if (query) performSearch(query, region);
+    }
+  });
+}
+
+// Quick Suggestion Tag Chips
+document.querySelectorAll('.tag-chip').forEach(tag => {
+  tag.addEventListener('click', () => {
+    const query = tag.getAttribute('data-search');
+    performSearch(query, 'EUW');
+  });
+});
+
+// Follow Button & List Elements
+const toggleFollowBtn = document.getElementById('toggle-follow-btn');
+const followBtnText = document.getElementById('follow-btn-text');
+const followsListContainer = document.getElementById('follows-list-container');
+const followsCountBadge = document.getElementById('follows-count-badge');
+
+let followedPlayersList = [];
+
+// Load Followed Players
+async function loadFollowedPlayers() {
+  try {
+    followedPlayersList = await ipcRenderer.invoke('get-followed-players');
+    renderFollowsList();
+    updateFollowBtnState();
+  } catch (err) {
+    console.error('Failed to load followed players:', err);
+  }
+}
+
+function renderFollowsList() {
+  if (!followsListContainer) return;
+
+  if (followsCountBadge) {
+    followsCountBadge.innerText = `${followedPlayersList.length} Followed Player(s)`;
+  }
+
+  if (followedPlayersList.length === 0) {
+    followsListContainer.innerHTML = `
+      <div style="grid-column: span 2; text-align: center; padding: 40px; color: var(--text-muted);">
+        <i data-lucide="user-x" style="width: 48px; height: 48px; margin-bottom: 12px; color: var(--text-muted);"></i>
+        <h3>No followed summoners yet.</h3>
+        <p style="font-size: 12px;">Search for a player and click "Follow" to track their live status here.</p>
+      </div>
+    `;
+    if (window.lucide) window.lucide.createIcons();
+    return;
+  }
+
+  followsListContainer.innerHTML = followedPlayersList.map(p => `
+    <div class="follow-card">
+      <div class="follow-user-info">
+        <img src="${p.icon || '../assets/logo.png'}" class="follow-avatar" alt="${p.gameName}">
+        <div>
+          <div class="follow-name">${p.gameName} <span class="tag-badge">#${p.tagLine}</span></div>
+          <div class="follow-sub">${p.rank} • ${p.winrate} WR</div>
+          <div class="follow-status-badge ${p.isLive ? 'live' : 'offline'}">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: ${p.isLive ? '#2ecc71' : '#8d9bb0'};"></span>
+            <span>${p.isLive ? `IN GAME - ${p.liveChamp} (${p.gameTime})` : `Offline - ${p.lastSeen || 'Idle'}`}</span>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <button class="pill-button view-follow-prof-btn" data-name="${p.gameName}" data-tag="${p.tagLine}" data-region="${p.region}">
+          <i data-lucide="eye" style="width: 12px; height: 12px;"></i>
+          <span>Profile</span>
+        </button>
+        <button class="titlebar-btn unfollow-btn" data-name="${p.gameName}" data-tag="${p.tagLine}" style="width: 100%; border-color: #e63946; color: #e63946;" title="Unfollow">
+          <i data-lucide="user-minus" style="width: 12px; height: 12px;"></i>
+        </button>
+      </div>
+    </div>
+  `).join('');
+
+  // Attach event listeners for view profile & unfollow
+  document.querySelectorAll('.view-follow-prof-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const name = btn.getAttribute('data-name');
+      const tag = btn.getAttribute('data-tag');
+      const region = btn.getAttribute('data-region') || 'EUW';
+      performSearch(`${name}#${tag}`, region);
+    });
+  });
+
+  document.querySelectorAll('.unfollow-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const name = btn.getAttribute('data-name');
+      const tag = btn.getAttribute('data-tag');
+      followedPlayersList = await ipcRenderer.invoke('toggle-follow-player', { gameName: name, tagLine: tag });
+      renderFollowsList();
+      updateFollowBtnState();
+    });
+  });
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+// Toggle Follow on Profile
+if (toggleFollowBtn) {
+  toggleFollowBtn.addEventListener('click', async () => {
+    if (!currentProfile) return;
+    const playerToToggle = {
+      gameName: currentProfile.gameName,
+      tagLine: currentProfile.tagLine,
+      region: searchRegion.value || 'EUW',
+      rank: `${currentProfile.rankedSolo?.tier || 'Master'} ${currentProfile.rankedSolo?.lp || 1508} LP`,
+      winrate: `${currentProfile.rankedSolo?.winrate || 51}%`,
+      isLive: true,
+      liveChamp: "Singed",
+      gameTime: "12:15",
+      icon: currentProfile.profileIconUrl || '../assets/logo.png'
+    };
+
+    followedPlayersList = await ipcRenderer.invoke('toggle-follow-player', playerToToggle);
+    renderFollowsList();
+    updateFollowBtnState();
+  });
+}
+
+function updateFollowBtnState() {
+  if (!currentProfile || !toggleFollowBtn) return;
+  const isFollowed = followedPlayersList.some(p => p.gameName.toLowerCase() === currentProfile.gameName.toLowerCase() && p.tagLine.toLowerCase() === currentProfile.tagLine.toLowerCase());
+
+  if (isFollowed) {
+    toggleFollowBtn.style.background = 'var(--powder-cyan)';
+    toggleFollowBtn.style.color = '#000';
+    followBtnText.innerText = 'Following ✅';
+  } else {
+    toggleFollowBtn.style.background = 'rgba(0, 168, 232, 0.15)';
+    toggleFollowBtn.style.color = 'var(--powder-cyan)';
+    followBtnText.innerText = 'Follow';
+  }
+}
 
 // Search Summoner Bar
 searchBtn.addEventListener('click', () => performSearch());
@@ -159,9 +344,9 @@ searchInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') performSearch();
 });
 
-function performSearch() {
-  const query = searchInput.value.trim();
-  const region = searchRegion.value;
+function performSearch(customQuery = null, customRegion = null) {
+  const query = customQuery || searchInput.value.trim();
+  const region = customRegion || searchRegion.value;
   if (!query) return;
 
   let gameName = query;
@@ -173,6 +358,8 @@ function performSearch() {
     tagLine = parts[1];
   }
 
+  // Switch to profile view
+  switchView('view-profile');
   loadProfile({ gameName, tagLine, region });
 }
 
@@ -185,11 +372,11 @@ updateStatsBtn.addEventListener('click', () => {
 // Load Profile Data
 async function loadProfile(query = null) {
   try {
-    updateStatsBtn.innerHTML = '<i data-lucide="loader-2" class="spin" style="width: 14px; height: 14px;"></i> <span>Chargement...</span>';
+    updateStatsBtn.innerHTML = '<i data-lucide="loader-2" class="spin" style="width: 14px; height: 14px;"></i> <span>Loading...</span>';
     if (window.lucide) window.lucide.createIcons();
 
     const profile = await ipcRenderer.invoke('get-summoner-profile', query);
-    updateStatsBtn.innerHTML = '<i data-lucide="rotate-cw" style="width: 14px; height: 14px;"></i> <span>Actualiser</span>';
+    updateStatsBtn.innerHTML = '<i data-lucide="rotate-cw" style="width: 14px; height: 14px;"></i> <span>Refresh</span>';
     if (window.lucide) window.lucide.createIcons();
 
     if (profile) {
@@ -198,7 +385,7 @@ async function loadProfile(query = null) {
     }
   } catch (err) {
     console.error('Failed to load summoner profile:', err);
-    updateStatsBtn.innerHTML = '<i data-lucide="rotate-cw" style="width: 14px; height: 14px;"></i> <span>Actualiser</span>';
+    updateStatsBtn.innerHTML = '<i data-lucide="rotate-cw" style="width: 14px; height: 14px;"></i> <span>Refresh</span>';
     if (window.lucide) window.lucide.createIcons();
   }
 }
@@ -313,6 +500,9 @@ function renderProfileUI(profile) {
   // 8. LP History Chart
   renderLpChart();
 
+  // 9. Update Follow Button State
+  updateFollowBtnState();
+
   // Render Lucide SVG Icons
   if (window.lucide) window.lucide.createIcons();
 }
@@ -359,5 +549,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (window.lucide) window.lucide.createIcons();
 });
 
-// Initial Auto-Login Load
+// Initial Startup Loads
+loadFollowedPlayers();
 loadProfile();

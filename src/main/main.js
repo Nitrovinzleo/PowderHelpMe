@@ -291,6 +291,69 @@ ipcMain.handle('generate-verification-challenge', (event, { gameName, tagLine })
   return riotApi.generateVerificationChallenge(gameName, tagLine);
 });
 
+ipcMain.handle('get-followed-players', () => {
+  return store.get('followedPlayers') || [
+    {
+      gameName: "Lesbian princess",
+      tagLine: "UwU",
+      region: "EUW",
+      rank: "Master 1508 LP",
+      winrate: "51%",
+      isLive: true,
+      liveChamp: "Jinx",
+      gameTime: "18:42",
+      icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/champion/Jinx.png"
+    },
+    {
+      gameName: "Faker",
+      tagLine: "KR1",
+      region: "KR",
+      rank: "Challenger 1840 LP",
+      winrate: "64%",
+      isLive: false,
+      lastSeen: "Il y a 2h",
+      icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/champion/Ahri.png"
+    }
+  ];
+});
+
+ipcMain.handle('toggle-follow-player', (event, player) => {
+  let list = store.get('followedPlayers') || [
+    {
+      gameName: "Lesbian princess",
+      tagLine: "UwU",
+      region: "EUW",
+      rank: "Master 1508 LP",
+      winrate: "51%",
+      isLive: true,
+      liveChamp: "Jinx",
+      gameTime: "18:42",
+      icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/champion/Jinx.png"
+    },
+    {
+      gameName: "Faker",
+      tagLine: "KR1",
+      region: "KR",
+      rank: "Challenger 1840 LP",
+      winrate: "64%",
+      isLive: false,
+      lastSeen: "Il y a 2h",
+      icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/champion/Ahri.png"
+    }
+  ];
+  
+  const index = list.findIndex(p => p.gameName.toLowerCase() === player.gameName.toLowerCase() && p.tagLine.toLowerCase() === player.tagLine.toLowerCase());
+  
+  if (index > -1) {
+    list.splice(index, 1);
+  } else {
+    list.push(player);
+  }
+  
+  store.set('followedPlayers', list);
+  return list;
+});
+
 ipcMain.handle('verify-account-icon', async (event, { gameName, tagLine, requiredIconId, region }) => {
   const result = await riotApi.verifySummonerIcon(gameName, tagLine, requiredIconId, region || 'EUW');
   if (result.success) {
