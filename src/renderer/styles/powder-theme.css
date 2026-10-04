@@ -1,0 +1,201 @@
+/* ==========================================================================
+   POWDER ARCANE DESIGN SYSTEM - Solid & Clean Matte Desktop Theme
+   (No Neons, No Sci-Fi Glows, Solid Opaque Window)
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+:root {
+  /* Solid Opaque Color Palette */
+  --bg-dark: #0c0f18;
+  --bg-panel: #10141e;
+  --bg-card: #171c2a;
+  --bg-card-hover: #1f2538;
+  
+  /* Powder Matte Accent Colors */
+  --powder-cyan: #00a8e8;
+  --powder-cyan-dark: #0077b6;
+  
+  --powder-pink: #e63946;
+  --powder-pink-dark: #b81d2a;
+  
+  --powder-teal: #149795;
+  --powder-gold: #e5a93c;
+  
+  /* Status Colors */
+  --health-green: #2ecc71;
+  --danger-red: #e63946;
+  
+  /* Text */
+  --text-main: #f0f4f8;
+  --text-muted: #8d9bb0;
+  --text-dim: #5a687d;
+  
+  /* Solid Flat Borders */
+  --border-solid: 1px solid #283044;
+  --border-cyan: 1px solid #00a8e8;
+  --border-pink: 1px solid #e63946;
+  
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-full: 9999px;
+  
+  --font-main: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+body {
+  font-family: var(--font-main);
+  background: var(--bg-panel);
+  color: var(--text-main);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ==========================================================================
+   MATTE DESKTOP CONTAINER
+   ========================================================================== */
+
+.powder-container {
+  background: var(--bg-panel);
+  border: var(--border-solid);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.widget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #283044;
+  -webkit-app-region: drag;
+  cursor: move;
+}
+
+.widget-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.powder-flare {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--powder-cyan);
+}
+
+.widget-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--powder-cyan);
+}
+
+.edit-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(230, 57, 70, 0.15);
+  color: var(--powder-pink);
+  border: 1px solid var(--powder-pink);
+  text-transform: uppercase;
+  -webkit-app-region: no-drag;
+}
+
+/* ==========================================================================
+   SOLID MATTE CARDS & STATS
+   ========================================================================== */
+
+.stat-card, .timer-item, .build-card, .player-card {
+  background: var(--bg-card);
+  border: var(--border-solid);
+  border-radius: var(--radius-sm);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.stat-card:hover, .timer-item:hover, .build-card:hover, .player-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--powder-cyan);
+}
+
+.metric-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.metric-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.metric-value {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.metric-value.highlight-cyan {
+  color: var(--powder-cyan);
+}
+
+.metric-value.highlight-pink {
+  color: var(--powder-pink);
+}
+
+.metric-value.highlight-gold {
+  color: var(--powder-gold);
+}
+
+/* Progress Bars */
+.progress-bar-bg {
+  width: 100%;
+  height: 6px;
+  background: #0c0f18;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--powder-cyan);
+  transition: width 0.3s ease;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-dark);
+}
+::-webkit-scrollbar-thumb {
+  background: #283044;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--powder-cyan);
+}

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Timers Jungle - PowderHelpMe Overlay</title>
+  <link rel="stylesheet" href="../styles/powder-theme.css">
+  <style>
+    .timer-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .timer-item {
+      background: var(--bg-card);
+      border: 1px solid rgba(0, 168, 232, 0.15);
+      border-radius: var(--radius-sm);
+      padding: 6px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .timer-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .timer-icon {
+      font-size: 14px;
+      width: 20px;
+      text-align: center;
+    }
+    .timer-name {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .timer-clock {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--powder-gold);
+    }
+    .timer-clock.active {
+      color: var(--health-green);
+    }
+    .timer-clock.countdown {
+      color: var(--powder-cyan);
+    }
+  </style>
+</head>
+<body>
+  <div class="powder-container">
+    <div class="widget-header">
+      <div class="widget-title-group">
+        <div class="powder-orb"></div>
+        <span class="widget-title">Timers Jungle & Objs</span>
+      </div>
+      <span id="edit-badge" class="edit-badge">Édition</span>
+    </div>
+
+    <div class="timer-list" id="timer-list">
+      <div class="timer-item">
+        <div class="timer-info">
+          <span class="timer-icon" style="color: var(--powder-cyan); font-weight: 800;">DRG</span>
+          <span class="timer-name">Dragon</span>
+        </div>
+        <span id="dragon-timer" class="timer-clock active">DISPO</span>
+      </div>
+
+      <div class="timer-item">
+        <div class="timer-info">
+          <span class="timer-icon" style="color: var(--powder-purple); font-weight: 800;">BRN</span>
+          <span class="timer-name">Baron Nashor</span>
+        </div>
+        <span id="baron-timer" class="timer-clock">20:00</span>
+      </div>
+
+      <div class="timer-item">
+        <div class="timer-info">
+          <span class="timer-icon" style="color: var(--powder-pink); font-weight: 800;">RED</span>
+          <span class="timer-name">Buff Rouge</span>
+        </div>
+        <span id="red-timer" class="timer-clock active">DISPO</span>
+      </div>
+
+      <div class="timer-item">
+        <div class="timer-info">
+          <span class="timer-icon" style="color: var(--powder-cyan); font-weight: 800;">BLU</span>
+          <span class="timer-name">Buff Bleu</span>
+        </div>
+        <span id="blue-timer" class="timer-clock active">DISPO</span>
+      </div>
+
+      <div class="timer-item">
+        <div class="timer-info">
+          <span class="timer-icon" style="color: var(--powder-gold); font-weight: 800;">GRB</span>
+          <span class="timer-name">Larves du Néant</span>
+        </div>
+        <span id="grubs-timer" class="timer-clock active">DISPO</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="jungleWidget.js"></script>
+</body>
+</html>

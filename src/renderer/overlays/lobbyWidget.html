@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lobby & Adversaires - PowderHelpMe Overlay</title>
+  <link rel="stylesheet" href="../styles/powder-theme.css">
+  <style>
+    .player-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .player-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(0, 168, 232, 0.15);
+      border-radius: var(--radius-sm);
+      padding: 5px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .player-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .champ-badge {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--bg-dark);
+      border: 1px solid var(--powder-cyan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--powder-gold);
+    }
+    .player-name {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .player-sub {
+      font-size: 9px;
+      color: var(--text-muted);
+    }
+    .player-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+    .winrate-tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .winrate-high { color: var(--health-green); }
+    .winrate-mid { color: var(--powder-gold); }
+    .winrate-low { color: var(--danger-red); }
+    .badge-pill {
+      font-size: 8px;
+      padding: 1px 4px;
+      border-radius: 4px;
+      background: rgba(0, 168, 232, 0.15);
+      color: var(--powder-cyan);
+    }
+  </style>
+</head>
+<body>
+  <div class="powder-container">
+    <div class="widget-header">
+      <div class="widget-title-group">
+        <div class="powder-orb"></div>
+        <span class="widget-title">Adversaires & Winrates</span>
+      </div>
+      <span id="edit-badge" class="edit-badge">Édition</span>
+    </div>
+
+    <div class="player-list" id="player-list">
+      <!-- Opponent cards rendered dynamically -->
+    </div>
+  </div>
+
+  <script src="lobbyWidget.js"></script>
+</body>
+</html>

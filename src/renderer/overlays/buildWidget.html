@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Build Adaptatif Live - PowderHelpMe Overlay</title>
+  <link rel="stylesheet" href="../styles/powder-theme.css">
+  <style>
+    .build-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .build-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(0, 168, 232, 0.2);
+      border-radius: var(--radius-sm);
+      padding: 6px 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .item-img {
+      width: 32px;
+      height: 32px;
+      border-radius: 4px;
+      border: 1px solid var(--powder-gold);
+      background: var(--bg-dark);
+      object-fit: cover;
+    }
+    .build-details {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    .build-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .build-item-name {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--powder-gold);
+    }
+    .build-tag {
+      font-size: 8px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: rgba(0, 168, 232, 0.25);
+      color: var(--powder-cyan);
+      border: 1px solid var(--powder-cyan);
+    }
+    .build-reason {
+      font-size: 9px;
+      color: var(--text-muted);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 200px;
+    }
+    .ratio-bar {
+      display: flex;
+      height: 4px;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .ratio-ap {
+      background: var(--powder-cyan);
+    }
+    .ratio-ad {
+      background: var(--powder-pink);
+    }
+  </style>
+</head>
+<body>
+  <div class="powder-container">
+    <div class="widget-header">
+      <div class="widget-title-group">
+        <div class="powder-orb"></div>
+        <span class="widget-title">Conseils Build Live</span>
+      </div>
+      <span id="edit-badge" class="edit-badge">Édition</span>
+    </div>
+
+    <div style="margin-bottom: 6px;">
+      <div class="metric-row" style="margin-bottom: 2px;">
+        <span class="metric-label" style="font-size: 9px;">Compo Ennemie Dégâts</span>
+        <span id="ratio-text" class="metric-label" style="font-size: 9px; color: var(--text-main);">40% AP / 60% AD</span>
+      </div>
+      <div class="ratio-bar">
+        <div id="ratio-ap-bar" class="ratio-ap" style="width: 40%;"></div>
+        <div id="ratio-ad-bar" class="ratio-ad" style="width: 60%;"></div>
+      </div>
+    </div>
+
+    <div class="build-list" id="build-list">
+      <!-- Build cards populated dynamically -->
+    </div>
+  </div>
+
+  <script src="buildWidget.js"></script>
+</body>
+</html>

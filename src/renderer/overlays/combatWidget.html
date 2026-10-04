@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Combat & DPM - PowderHelpMe Overlay</title>
+  <link rel="stylesheet" href="../styles/powder-theme.css">
+  <style>
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      flex: 1;
+    }
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(0, 168, 232, 0.15);
+      border-radius: var(--radius-sm);
+      padding: 6px 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .full-width {
+      grid-column: span 2;
+    }
+    .status-text {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: center;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="powder-container">
+    <div class="widget-header">
+      <div class="widget-title-group">
+        <div class="powder-orb"></div>
+        <span class="widget-title">Stats Live & DPM</span>
+      </div>
+      <span id="edit-badge" class="edit-badge">Édition (Ctrl+Shift+O)</span>
+    </div>
+
+    <div id="offline-view" class="status-text">
+      Attente de la partie LoL...
+    </div>
+
+    <div id="live-view" class="stats-grid" style="display: none;">
+      <div class="stat-card full-width">
+        <div class="metric-row" style="margin-bottom: 0;">
+          <span class="metric-label">DPM (Dégâts/Min)</span>
+          <span id="dpm-val" class="metric-value highlight-purple">0</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div id="dpm-bar" class="progress-bar-fill" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <span class="metric-label">CS / Min</span>
+        <span id="cs-val" class="metric-value highlight-gold">0.0</span>
+      </div>
+
+      <div class="stat-card">
+        <span class="metric-label">KDA</span>
+        <span id="kda-val" class="metric-value highlight-cyan">0/0/0</span>
+      </div>
+
+      <div class="stat-card">
+        <span class="metric-label">Or / Min (GPM)</span>
+        <span id="gpm-val" class="metric-value">0</span>
+      </div>
+
+      <div class="stat-card">
+        <span class="metric-label">Kill Part. (KP)</span>
+        <span id="kp-val" class="metric-value" style="color: var(--text-main);">0%</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="combatWidget.js"></script>
+</body>
+</html>
