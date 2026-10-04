@@ -1,4 +1,8 @@
-# 💣 PowderHelpMe.exe - League of Legends Stats & Profile Tracker
+#  PowderHelpMe.exe - League of Legends Stats & Profile Tracker
+
+
+<img width="1241" height="487" alt="image" src="https://github.com/user-attachments/assets/e68665bd-8ea5-40fd-93a4-591d0392ab79" />
+
 
 **PowderHelpMe** is a standalone desktop application (Electron + Node.js) dedicated to consulting League of Legends statistics and tracking real-time player performance, inspired by the universe of **Arcane** (Powder / Jinx).
 
