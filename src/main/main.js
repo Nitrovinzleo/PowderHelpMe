@@ -7,8 +7,10 @@ const RiotApi = require('./riotApi');
 const { analyzeBuildRecommendations } = require('./buildEngine');
 const { computeBadges } = require('./badgeEngine');
 
-// Disable SSL certificate checking for Riot local HTTPS API
+// Disable SSL certificate checking for Riot local HTTPS API & GPU cache lock warnings
 app.commandLine.appendSwitch('ignore-certificate-errors', 'true');
+app.commandLine.appendSwitch('disable-gpu-shader-disk-cache', 'true');
+app.commandLine.appendSwitch('disable-http-cache', 'true');
 
 let envApiKey = '';
 try {
@@ -47,10 +49,10 @@ let pollInterval = null;
 
 function createDashboardWindow() {
   dashboardWindow = new BrowserWindow({
-    width: 1100,
-    height: 750,
-    minWidth: 900,
-    minHeight: 600,
+    width: 1250,
+    height: 780,
+    minWidth: 1050,
+    minHeight: 650,
     frame: false,
     transparent: false,
     backgroundColor: '#10141e',
@@ -259,11 +261,23 @@ ipcMain.on('reset-widget-positions', () => {
   });
 });
 
-const riotApi = new RiotApi(store.get('userAccount')?.apiKey || '');
+const initialApiKey = store.get('userAccount')?.apiKey || process.env.RIOT_API_KEY || '';
+const riotApi = new RiotApi(initialApiKey);
+
+ipcMain.handle('get-user-account', () => {
+  const acc = store.get('userAccount') || {};
+  return {
+    gameName: acc.gameName || 'Lesbian princess',
+    tagLine: acc.tagLine || 'UwU',
+    region: acc.region || 'EUW',
+    apiKey: acc.apiKey || process.env.RIOT_API_KEY || '',
+    verified: acc.verified || false
+  };
+});
 
 ipcMain.handle('get-summoner-profile', async (event, query) => {
   const account = query || store.get('userAccount') || { gameName: "Lesbian princess", tagLine: "UwU", region: "EUW" };
-  const apiKey = store.get('userAccount')?.apiKey || '';
+  const apiKey = account.apiKey || store.get('userAccount')?.apiKey || process.env.RIOT_API_KEY || '';
   if (apiKey) riotApi.setApiKey(apiKey);
 
   const profileData = await riotApi.getSummonerByRiotId(account.gameName, account.tagLine, account.region || 'EUW');
@@ -279,10 +293,19 @@ ipcMain.handle('get-summoner-profile', async (event, query) => {
   return { ...profileData, badges };
 });
 
+ipcMain.handle('get-more-matches', async (event, { puuid, continentalHost, start, count }) => {
+  return await riotApi.getMoreMatches(puuid, continentalHost, start || 20, count || 10);
+});
+
+ipcMain.handle('get-leaderboard', async (event, region) => {
+  return await riotApi.getLeaderboard(region || 'EUW');
+});
+
 ipcMain.handle('save-user-account', async (event, accountData) => {
   store.set('userAccount', accountData);
-  if (accountData.apiKey) {
-    riotApi.setApiKey(accountData.apiKey);
+  const apiKey = accountData.apiKey || process.env.RIOT_API_KEY || '';
+  if (apiKey) {
+    riotApi.setApiKey(apiKey);
   }
   return true;
 });

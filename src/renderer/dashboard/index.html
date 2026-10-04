@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PowderHelpMe.exe - LoL Stats & Profile Tracker</title>
   <link rel="stylesheet" href="dashboard.css">
-  <script src="../../../node_modules/lucide/dist/umd/lucide.js"></script>
-  <script src="../../../node_modules/chart.js/dist/chart.umd.js"></script>
 </head>
+
 <body>
   <div class="dashboard-root">
     <!-- Left Sidebar Navigation -->
@@ -71,7 +71,11 @@
             <option value="KR">KR</option>
             <option value="EUNE">EUNE</option>
           </select>
-          <input type="text" id="search-input" class="search-input" placeholder="Search Summoner (e.g. Lesbian princess#UwU)">
+          <input type="text" id="search-input" class="search-input"
+            placeholder="Search Summoner (e.g. Lesbian princess#UwU)">
+          <button id="search-clear-btn" class="search-clear-btn" title="Clear text" style="display: none;">
+            <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+          </button>
           <button id="search-btn" class="search-btn" title="Search">
             <i data-lucide="search" style="width: 14px; height: 14px;"></i>
           </button>
@@ -98,7 +102,8 @@
             </div>
             <h1 class="hero-title">Powder Will Help You!</h1>
             <p class="hero-subtitle">
-              Analyze real-time League of Legends stats, discover optimal champion builds, track ranked ladder progress, and boost your win rate with Powder's help.
+              Analyze real-time League of Legends stats, discover optimal champion builds, track ranked ladder progress,
+              and boost your win rate with Powder's help.
             </p>
 
             <!-- Hero Big Search Bar -->
@@ -109,10 +114,14 @@
                 <option value="KR">KR</option>
                 <option value="EUNE">EUNE</option>
               </select>
-              <input type="text" id="hero-search-input" class="hero-input" placeholder="Enter Riot ID (e.g. Lesbian princess#UwU)">
+              <input type="text" id="hero-search-input" class="hero-input"
+                placeholder="Enter Riot ID (e.g. Lesbian princess#UwU)">
+              <button id="hero-search-clear-btn" class="search-clear-btn" title="Clear text" style="display: none;">
+                <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+              </button>
               <button id="hero-search-btn" class="hero-btn">
                 <i data-lucide="search" style="width: 16px; height: 16px;"></i>
-                <span>Analyze</span>
+                <span></span>
               </button>
             </div>
 
@@ -161,11 +170,35 @@
 
       <!-- VIEW 2: PROFILE PAGE (U.GG LAYOUT) -->
       <div id="view-profile" class="app-view">
+        <!-- Not Found Card State (Hidden by default) -->
+        <div id="profile-not-found-card" class="not-found-card" style="display: none; margin: 20px;">
+          <div class="not-found-content">
+            <div class="powder-not-found-avatar">
+              <img src="../assets/powder_crying.png" class="powder-not-found-img" alt="Powder Crying">
+              <div class="not-found-badge-icon">
+                <i data-lucide="alert-triangle" style="width: 20px; height: 20px; color: #e63946;"></i>
+              </div>
+            </div>
+            <h2 class="not-found-title">Profile Not Found</h2>
+            <p id="not-found-subtitle" class="not-found-sub">
+              Powder wanted to help you, but the profile could not be found!
+            </p>
+            <div style="margin-top: 20px;">
+              <button id="not-found-back-home-btn" class="pill-button"
+                style="background: var(--powder-cyan); color: #000; font-weight: 800; padding: 12px 28px; gap: 10px; font-size: 14px; display: inline-flex; align-items: center; border-radius: 24px;">
+                <i data-lucide="arrow-left"
+                  style="width: 18px; height: 18px; stroke-width: 3.5; stroke: #000000 !important;"></i>
+                <span>Back to Home</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- U.GG Style Header Banner -->
-        <div class="ugg-header-banner">
+        <div id="profile-header-banner" class="ugg-header-banner">
           <div class="profile-main-info">
             <div class="avatar-wrapper">
-              <img id="prof-avatar" src="../assets/logo.png" class="profile-avatar-img" alt="Avatar">
+              <img id="prof-avatar" src="https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/5410.jpg" class="profile-avatar-img" alt="Avatar">
               <span id="prof-level" class="level-badge">707</span>
             </div>
             <div>
@@ -178,7 +211,12 @@
           </div>
 
           <div style="display: flex; gap: 10px; align-items: center;">
-            <button id="toggle-follow-btn" class="pill-button" style="background: rgba(0, 168, 232, 0.15); border-color: var(--powder-cyan); color: var(--powder-cyan);">
+            <div id="prof-followers-badge" class="followers-badge">
+              <i data-lucide="users" style="width: 14px; height: 14px;"></i>
+              <span id="followers-count-text">142 Followers</span>
+            </div>
+            <button id="toggle-follow-btn" class="pill-button"
+              style="background: rgba(0, 168, 232, 0.15); border-color: var(--powder-cyan); color: var(--powder-cyan);">
               <i data-lucide="user-plus" style="width: 14px; height: 14px;"></i>
               <span id="follow-btn-text">Follow</span>
             </button>
@@ -194,6 +232,10 @@
           <div class="subnav-item active" data-tab="tab-overview">
             <i data-lucide="layout-dashboard" style="width: 14px; height: 14px;"></i>
             <span>Overview</span>
+          </div>
+          <div class="subnav-item" data-tab="tab-soloq">
+            <i data-lucide="shield" style="width: 14px; height: 14px;"></i>
+            <span>SOLO Q RANKED</span>
           </div>
           <div class="subnav-item" data-tab="tab-champs">
             <i data-lucide="bar-chart-2" style="width: 14px; height: 14px;"></i>
@@ -213,17 +255,42 @@
         <div class="ugg-grid-layout">
           <!-- Left Column (Rank Cards & Top Champions) -->
           <div class="left-col">
-            <!-- Ranked Solo Card -->
+            <!-- Ranked Solo Card with embedded Rank Progression -->
             <div class="rank-card">
               <div class="rank-header">
                 <span>Ranked Solo</span>
                 <span id="solo-wr-text" style="color: var(--powder-cyan);">51% Win Rate</span>
               </div>
               <div class="rank-tier-row">
-                <img id="solo-tier-img" src="https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/master.png" class="rank-emblem" alt="Master Tier" onerror="this.src='../assets/logo.png'">
+                <img id="solo-tier-img"
+                  src="https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/master.png"
+                  class="rank-emblem" alt="Master Tier" onerror="this.src='../assets/logo.png'">
                 <div>
                   <div id="solo-tier-name" class="tier-name">Master</div>
                   <div id="solo-lp" class="lp-text">1,508 LP • 689W 651L</div>
+                </div>
+              </div>
+
+              <!-- Embedded Rank Progression (Closed by Default) -->
+              <div id="rank-progression-card" style="margin-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 10px;">
+                <div class="rank-header rank-accordion-header" id="rank-accordion-toggle"
+                  style="cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: space-between; margin-bottom: 0;">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">RANK PROGRESSION</span>
+                    <span style="font-size: 10px; color: var(--powder-cyan); font-weight: 700;">(LAST 100 GAMES)</span>
+                  </div>
+                  <i data-lucide="chevron-down" id="rank-accordion-icon" class="rank-accordion-icon"></i>
+                </div>
+                <div id="rank-accordion-body" class="rank-accordion-body">
+                  <div class="rank-chart-wrapper"
+                    style="position: relative; height: 190px; width: 100%; margin-top: 8px;">
+                    <canvas id="rank100Chart"></canvas>
+                  </div>
+                  <div
+                    style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-top: 6px;">
+                    <span>100 games ago</span>
+                    <span>Last game</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -235,7 +302,9 @@
                 <span id="flex-wr-text" style="color: var(--text-muted);">20% Win Rate</span>
               </div>
               <div class="rank-tier-row">
-                <img id="flex-tier-img" src="https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/platinum.png" class="rank-emblem" alt="Flex Tier" onerror="this.src='../assets/logo.png'">
+                <img id="flex-tier-img"
+                  src="https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/platinum.png"
+                  class="rank-emblem" alt="Flex Tier" onerror="this.src='../assets/logo.png'">
                 <div>
                   <div id="flex-tier-name" class="tier-name">Platinum 3</div>
                   <div id="flex-lp" class="lp-text">60 LP • 1W 4L</div>
@@ -247,21 +316,10 @@
             <div class="rank-card">
               <div class="rank-header">
                 <span>Champion Stats</span>
-                <span style="font-size: 10px; color: var(--powder-cyan);">S14 Ranked</span>
+                <span style="font-size: 10px; color: var(--powder-cyan);">Ranked Solo / Duo</span>
               </div>
               <div id="top-champs-list">
                 <!-- Top champs dynamically generated -->
-              </div>
-            </div>
-
-            <!-- Recently Played With -->
-            <div class="rank-card">
-              <div class="rank-header">
-                <span>Recently Played With</span>
-                <span style="font-size: 10px;">Last 20 Games</span>
-              </div>
-              <div id="recently-played-list">
-                <!-- Teammates list dynamically generated -->
               </div>
             </div>
           </div>
@@ -274,16 +332,26 @@
               <div class="match-summary-bar">
                 <div>
                   <span style="font-weight: 800; font-size: 14px; color: var(--text-main);">Recent Matches</span>
-                  <span id="summary-wr" style="font-size: 12px; color: var(--powder-cyan); font-weight: 700; margin-left: 10px;">40% WR (Last 20)</span>
+                  <span id="summary-wr"
+                    style="font-size: 12px; color: var(--powder-cyan); font-weight: 700; margin-left: 10px;">--% WR</span>
                 </div>
                 <div style="font-size: 12px; color: var(--text-muted);">
-                  Average KDA: <strong id="summary-kda" style="color: var(--text-main);">1.73 KDA</strong>
+                  Average KDA: <strong id="summary-kda" style="color: var(--text-main);">-- KDA</strong>
                 </div>
               </div>
 
               <!-- Match Cards List -->
               <div id="match-cards-container" style="display: flex; flex-direction: column; gap: 10px;">
                 <!-- Match cards generated dynamically -->
+              </div>
+
+              <!-- Load More Matches Button -->
+              <div style="text-align: center; margin-top: 16px;">
+                <button id="load-more-matches-btn" class="pill-button"
+                  style="background: rgba(0, 168, 232, 0.15); border-color: var(--powder-cyan); color: var(--powder-cyan); padding: 8px 24px; border-radius: 20px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; justify-content: center;">
+                  <i data-lucide="chevron-down" style="width: 14px; height: 14px;"></i>
+                  <span>Show Older Matches</span>
+                </button>
               </div>
             </div>
 
@@ -325,9 +393,11 @@
         <div class="follows-header-banner">
           <div>
             <h2 style="font-size: 22px; font-weight: 800; color: #fff; margin: 0 0 4px 0;">Followed Summoners</h2>
-            <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Live status overview of your friends, pros, and rivals.</p>
+            <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Live status overview of your friends, pros,
+              and rivals.</p>
           </div>
-          <div style="font-size: 12px; color: var(--powder-cyan); font-weight: 800; background: rgba(0, 168, 232, 0.15); padding: 6px 14px; border-radius: 20px; border: 1px solid var(--powder-cyan);">
+          <div
+            style="font-size: 12px; color: var(--powder-cyan); font-weight: 800; background: rgba(0, 168, 232, 0.15); padding: 6px 14px; border-radius: 20px; border: 1px solid var(--powder-cyan);">
             <span id="follows-count-badge">2 Followed Player(s)</span>
           </div>
         </div>
@@ -346,10 +416,11 @@
         <i data-lucide="shield-check" style="width: 18px; height: 18px;"></i>
         <span>Account Login & Verification (OriBot Style)</span>
       </div>
-      
+
       <div id="oribot-step-1">
         <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5;">
-          Enter your Riot ID (GameName #TagLine). Generate an icon challenge to prove account ownership without passwords!
+          Enter your Riot ID (GameName #TagLine). Generate an icon challenge to prove account ownership without
+          passwords!
         </p>
 
         <div class="form-group">
@@ -372,18 +443,27 @@
           </select>
         </div>
 
+        <div class="form-group">
+          <label class="form-label">Riot API Key (RGAPI-...)</label>
+          <input type="password" id="acc-apikey" class="form-input"
+            placeholder="RGAPI-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+        </div>
+
         <div style="display: flex; gap: 10px; margin-top: 20px;">
-          <button id="gen-challenge-btn" class="update-btn" style="flex: 1; background: var(--powder-cyan); color: #000; font-weight: 800; justify-content: center;">
+          <button id="gen-challenge-btn" class="update-btn"
+            style="flex: 1; background: var(--powder-cyan); color: #000; font-weight: 800; justify-content: center;">
             <i data-lucide="shield-check" style="width: 16px; height: 16px;"></i>
             <span>Generate OriBot Challenge</span>
           </button>
-          <button id="close-modal-btn" class="titlebar-btn" style="background: #232a3b; width: auto; padding: 0 16px;">Cancel</button>
+          <button id="close-modal-btn" class="titlebar-btn"
+            style="background: #232a3b; width: auto; padding: 0 16px;">Cancel</button>
         </div>
       </div>
 
       <!-- OriBot Step 2: Change Profile Icon in LoL Client -->
       <div id="oribot-step-2" style="display: none; text-align: center;">
-        <div class="edit-badge" style="background: rgba(0, 168, 232, 0.2); color: var(--powder-cyan); font-size: 11px; padding: 4px 10px; margin-bottom: 10px;">
+        <div class="edit-badge"
+          style="background: rgba(0, 168, 232, 0.2); color: var(--powder-cyan); font-size: 11px; padding: 4px 10px; margin-bottom: 10px;">
           Icon Verification Pending
         </div>
 
@@ -391,25 +471,32 @@
           To verify account ownership without passwords:
         </p>
 
-        <div style="background: #0d111a; border: 2px dashed var(--powder-cyan); border-radius: 12px; padding: 16px; margin: 12px 0;">
-          <img id="challenge-icon-img" src="https://ddragon.leagueoflegends.com/cdn/14.20.1/img/profileicon/23.png" style="width: 72px; height: 72px; border-radius: 12px; border: 2px solid var(--powder-gold); margin-bottom: 8px;">
-          <div id="challenge-icon-name" style="font-weight: 800; font-size: 13px; color: var(--powder-gold);">Icon: Blue Potion (#23)</div>
+        <div
+          style="background: #0d111a; border: 2px dashed var(--powder-cyan); border-radius: 12px; padding: 16px; margin: 12px 0;">
+          <img id="challenge-icon-img" src="https://ddragon.leagueoflegends.com/cdn/14.20.1/img/profileicon/23.png"
+            style="width: 72px; height: 72px; border-radius: 12px; border: 2px solid var(--powder-gold); margin-bottom: 8px;">
+          <div id="challenge-icon-name" style="font-weight: 800; font-size: 13px; color: var(--powder-gold);">Icon: Blue
+            Potion (#23)</div>
         </div>
 
-        <ol style="text-align: left; font-size: 11px; color: var(--text-muted); margin: 10px 0 16px 20px; line-height: 1.7;">
+        <ol
+          style="text-align: left; font-size: 11px; color: var(--text-muted); margin: 10px 0 16px 20px; line-height: 1.7;">
           <li>Open your League of Legends client.</li>
           <li>Go to your profile in-game and equip the challenge icon shown above.</li>
           <li>Click <strong>"Verify Profile Icon"</strong> below!</li>
         </ol>
 
-        <div id="verify-status-msg" style="font-size: 11px; font-weight: 700; margin-bottom: 10px; display: none;"></div>
+        <div id="verify-status-msg" style="font-size: 11px; font-weight: 700; margin-bottom: 10px; display: none;">
+        </div>
 
         <div style="display: flex; gap: 10px;">
-          <button id="verify-icon-btn" class="update-btn" style="flex: 1; background: #2ecc71; color: #000; font-weight: 800; justify-content: center;">
+          <button id="verify-icon-btn" class="update-btn"
+            style="flex: 1; background: #2ecc71; color: #000; font-weight: 800; justify-content: center;">
             <i data-lucide="key-round" style="width: 16px; height: 16px;"></i>
             <span>Verify Profile Icon</span>
           </button>
-          <button id="back-step1-btn" class="titlebar-btn" style="background: #232a3b; width: auto; padding: 0 16px;">Back</button>
+          <button id="back-step1-btn" class="titlebar-btn"
+            style="background: #232a3b; width: auto; padding: 0 16px;">Back</button>
         </div>
       </div>
     </div>
@@ -417,4 +504,5 @@
 
   <script src="dashboard.js"></script>
 </body>
+
 </html>
