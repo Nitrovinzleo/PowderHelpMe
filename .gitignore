@@ -4,3 +4,6 @@ dist/
 config.json
 powder-settings.json
 *.log
+scratch/
+u_gg_*
+

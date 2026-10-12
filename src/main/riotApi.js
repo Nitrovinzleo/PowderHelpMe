@@ -1,8 +1,10 @@
 const https = require('https');
+const UggService = require('./uggService');
 
 class RiotApi {
   constructor(apiKey = '') {
     this.apiKey = apiKey.trim();
+    this.uggService = new UggService();
     this.ddragonVersion = '14.20.1';
     this.championIdMap = {};
     this.verificationIcons = [
@@ -147,7 +149,8 @@ class RiotApi {
     const cleanTagLine = (tagLine || '').trim();
 
     if (!this.apiKey) {
-      return this.getUggMockProfile(cleanGameName, cleanTagLine, region, 'No Riot API Key configured. Showing demo profile.');
+      console.log(`[RiotApi] No API Key configured. Scraping u.gg profile for ${cleanGameName}#${cleanTagLine}...`);
+      return await this.uggService.getPlayerProfile(cleanGameName, cleanTagLine, region);
     }
 
     try {
@@ -194,7 +197,11 @@ class RiotApi {
       }
 
       if (!account) {
-        console.warn(`Summoner ${cleanGameName}#${cleanTagLine} not found on any Riot cluster.`);
+        console.log(`[RiotApi] Loading PowderHelpMe live profile for ${cleanGameName}#${cleanTagLine}...`);
+        const uggProfile = await this.uggService.getPlayerProfile(cleanGameName, cleanTagLine, region);
+        if (uggProfile && !uggProfile.notFound) {
+          return uggProfile;
+        }
         return {
           notFound: true,
           gameName: cleanGameName,
@@ -303,7 +310,11 @@ class RiotApi {
 
       return this.formatProfileData(account, summoner, leagues, matches, masteries, activeRegionalHost);
     } catch (err) {
-      console.warn("Riot API error:", err.message);
+      console.warn("[RiotApi] Falling back to PowderHelpMe live service:", err.message);
+      const liveProfile = await this.uggService.getPlayerProfile(cleanGameName, cleanTagLine, region);
+      if (liveProfile && !liveProfile.notFound) {
+        return liveProfile;
+      }
       return {
         notFound: true,
         gameName: cleanGameName,
@@ -424,7 +435,6 @@ class RiotApi {
     const solo = leagues.find(l => l.queueType === 'RANKED_SOLO_5x5') || {};
     const flex = leagues.find(l => l.queueType === 'RANKED_FLEX_SR') || {};
 
-    // 1. Extract Champions strictly from Ranked Solo matches (or all matches if no ranked solo matches found)
     const soloMatches = matches.filter(m => m.queueId === 420 || (m.mode && m.mode.toLowerCase().includes('ranked solo')));
     const matchesToProcess = soloMatches.length > 0 ? soloMatches : matches;
 
@@ -463,7 +473,6 @@ class RiotApi {
       }))
       .sort((a, b) => b.games - a.games);
 
-    // Generate Personal Tier List dynamically from top champions
     const personalTierList = topChampions.slice(0, 3).map((c, idx) => ({
       champ: c.name,
       winrate: c.winrate,
@@ -487,6 +496,7 @@ class RiotApi {
       region: regionName,
       summonerName: `${account.gameName} #${account.tagLine}`,
       level: summoner.summonerLevel,
+      summonerLevel: summoner.summonerLevel,
       profileIconId: summoner.profileIconId,
       ladderRank: solo.tier ? `${solo.tier} ${solo.rank} (${solo.leaguePoints} LP)` : "Unranked",
       profileIconUrl: `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${summoner.profileIconId}.jpg`,
@@ -512,122 +522,34 @@ class RiotApi {
     };
   }
 
-  getUggMockProfile(gameName = "Lesbian princess", tagLine = "UwU", region = "EUW", errorMsg = "") {
-    const displayName = gameName || "Lesbian princess";
-    const displayTag = tagLine || "UwU";
-
-    return {
-      isRealData: false,
-      errorNotice: errorMsg,
-      gameName: displayName,
-      tagLine: displayTag,
-      summonerName: `${displayName} #${displayTag}`,
-      level: 707,
-      profileIconId: 5410,
-      ladderRank: "1,449 (top 0.0398%)",
-      profileIconUrl: "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/5410.jpg",
-      rankedSolo: {
-        tier: "Master",
-        rank: "",
-        lp: 1508,
-        wins: 689,
-        losses: 651,
-        winrate: 51
-      },
-      rankedFlex: {
-        tier: "Platinum 3",
-        rank: "",
-        lp: 60,
-        wins: 1,
-        losses: 4,
-        winrate: 20
-      },
-      topChampions: [
-        { name: "Singed", kda: "2.41", kills: "3.8", deaths: "5.4", assists: "9.3", winrate: 57, games: 818, icon: `https://ddragon.leagueoflegends.com/cdn/${this.ddragonVersion}/img/champion/Singed.png` },
-        { name: "Rek'Sai", kda: "1.87", kills: "4.0", deaths: "5.1", assists: "5.6", winrate: 44, games: 109, icon: `https://ddragon.leagueoflegends.com/cdn/${this.ddragonVersion}/img/champion/RekSai.png` },
-        { name: "Urgot", kda: "1.92", kills: "6.2", deaths: "6.3", assists: "5.8", winrate: 49, games: 74, icon: `https://ddragon.leagueoflegends.com/cdn/${this.ddragonVersion}/img/champion/Urgot.png` },
-        { name: "Cho'Gath", kda: "1.99", kills: "5.8", deaths: "5.7", assists: "5.6", winrate: 52, games: 60, icon: `https://ddragon.leagueoflegends.com/cdn/${this.ddragonVersion}/img/champion/Chogath.png` },
-        { name: "Ornn", kda: "1.88", kills: "1.8", deaths: "4.7", assists: "7.0", winrate: 38, games: 32, icon: `https://ddragon.leagueoflegends.com/cdn/${this.ddragonVersion}/img/champion/Ornn.png` },
-        { name: "Rumble", kda: "1.83", kills: "4.9", deaths: "7.1", assists: "8.0", winrate: 48, games: 31, icon: `https://ddragon.leagueoflegends.com/cdn/${this.ddragonVersion}/img/champion/Rumble.png` },
-        { name: "Sejuani", kda: "2.03", kills: "3.1", deaths: "6.0", assists: "9.1", winrate: 50, games: 28, icon: `https://ddragon.leagueoflegends.com/cdn/${this.ddragonVersion}/img/champion/Sejuani.png` }
-      ],
-      personalTierList: [
-        { champ: "Jinx", winrate: 63, tier: "S+", icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/champion/Jinx.png" },
-        { champ: "Caitlyn", winrate: 66, tier: "S+", icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/champion/Caitlyn.png" },
-        { champ: "Corki", winrate: 56, tier: "S+", icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/champion/Corki.png" }
-      ],
-      recentlyPlayedWith: [
-        { name: "hamsalak", games: 2, winrate: 0 },
-        { name: "sacrifice", games: 2, winrate: 0 }
-      ],
-      matches: [
-        {
-          id: "EUW1_68492019",
-          mode: "Ranked Solo",
-          win: true,
-          lpChange: "+29 LP",
-          timeAgo: "2 hours ago",
-          championName: "Singed",
-          championIcon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/champion/Singed.png",
-          champLevel: 18,
-          kills: 1,
-          deaths: 10,
-          assists: 10,
-          kdaRatio: "1.10",
-          cs: 231,
-          csPerMin: "7.1",
-          visionScore: 32,
-          items: [
-            "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/3116.png",
-            "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/3075.png",
-            "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/3009.png",
-            "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/4637.png",
-            "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/3157.png",
-            "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/3364.png"
-          ]
-        }
-      ]
-    };
-  }
-
   async getLeaderboard(region = 'EUW') {
     const activeHost = this.regionHostMap[region?.toUpperCase()] || 'euw1.api.riotgames.com';
-    if (!this.apiKey) {
-      return this.getMockLeaderboard();
-    }
-    try {
-      const url = `https://${activeHost}/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5`;
-      const challengerLeague = await this.makeRequest(url);
-      const entries = (challengerLeague.entries || []).sort((a, b) => b.leaguePoints - a.leaguePoints).slice(0, 50);
+    if (this.apiKey) {
+      try {
+        const url = `https://${activeHost}/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5`;
+        const challengerLeague = await this.makeRequest(url);
+        const entries = (challengerLeague.entries || []).sort((a, b) => b.leaguePoints - a.leaguePoints).slice(0, 50);
 
-      return entries.map((e, idx) => ({
-        rank: idx + 1,
-        summonerName: e.summonerName || e.summonerId,
-        tier: 'CHALLENGER',
-        lp: e.leaguePoints,
-        wins: e.wins,
-        losses: e.losses,
-        winrate: Math.round((e.wins / (e.wins + e.losses)) * 100)
-      }));
-    } catch (e) {
-      console.warn('Leaderboard API fetch error, returning fallback:', e.message);
-      return this.getMockLeaderboard();
+        return entries.map((e, idx) => ({
+          rank: idx + 1,
+          summonerName: e.summonerName || e.summonerId,
+          tier: 'CHALLENGER',
+          lp: e.leaguePoints,
+          wins: e.wins,
+          losses: e.losses,
+          winrate: Math.round((e.wins / (e.wins + e.losses)) * 100)
+        }));
+      } catch (e) {
+        console.warn('[RiotApi] Leaderboard API fetch error, fetching live rankings:', e.message);
+      }
     }
-  }
 
-  getMockLeaderboard() {
-    return [
-      { rank: 1, summonerName: "Agurin", tier: "CHALLENGER", lp: 1980, wins: 412, losses: 230, winrate: 64 },
-      { rank: 2, summonerName: "Bo", tier: "CHALLENGER", lp: 1895, wins: 380, losses: 210, winrate: 64 },
-      { rank: 3, summonerName: "Magifelix", tier: "CHALLENGER", lp: 1820, wins: 510, losses: 320, winrate: 61 },
-      { rank: 4, summonerName: "Vetheo", tier: "CHALLENGER", lp: 1760, wins: 340, losses: 200, winrate: 63 },
-      { rank: 5, summonerName: "Lesbian princess", tier: "MASTER", lp: 1508, wins: 689, losses: 651, winrate: 51 },
-      { rank: 6, summonerName: "Caps", tier: "CHALLENGER", lp: 1450, wins: 290, losses: 160, winrate: 64 },
-      { rank: 7, summonerName: "Nemesis", tier: "CHALLENGER", lp: 1410, wins: 400, losses: 250, winrate: 62 },
-      { rank: 8, summonerName: "Calmsky", tier: "CHALLENGER", lp: 1380, wins: 310, losses: 190, winrate: 62 },
-      { rank: 9, summonerName: "Upset", tier: "CHALLENGER", lp: 1340, wins: 280, losses: 170, winrate: 62 },
-      { rank: 10, summonerName: "Rekkles", tier: "CHALLENGER", lp: 1310, wins: 350, losses: 220, winrate: 61 }
-    ];
+    const liveLb = await this.uggService.getLeaderboard(region);
+    if (liveLb && liveLb.length > 0) {
+      return liveLb;
+    }
+
+    return [];
   }
 }
 

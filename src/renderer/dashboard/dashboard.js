@@ -92,6 +92,328 @@ subnavItems.forEach(item => {
   });
 });
 
+// Discord RPC Settings & UI Handlers
+const discordRpcToggle = document.getElementById('discord-rpc-toggle');
+const discordToggleContainer = document.getElementById('discord-toggle-container');
+const discordToggleSlider = document.getElementById('discord-toggle-slider');
+const discordToggleKnob = document.getElementById('discord-toggle-knob');
+const discordStatusText = document.getElementById('discord-status-text');
+const rpcPreviewBox = document.getElementById('discord-rpc-preview-box');
+const rpcPreviewDetails = document.getElementById('rpc-preview-details');
+const rpcPreviewState = document.getElementById('rpc-preview-state');
+const discordConnBadge = document.getElementById('discord-conn-badge');
+const discordDot = document.getElementById('discord-dot');
+const discordBadgeLabel = document.getElementById('discord-badge-label');
+
+async function updateDiscordRpcUI() {
+  try {
+    const settings = await ipcRenderer.invoke('get-discord-settings');
+    const enabled = settings.enabled;
+    const isConnected = settings.isConnected;
+
+    if (discordRpcToggle) discordRpcToggle.checked = enabled;
+
+    if (discordToggleSlider) {
+      discordToggleSlider.style.background = enabled ? 'var(--powder-cyan)' : '#232a3b';
+    }
+    if (discordToggleKnob) {
+      discordToggleKnob.style.left = enabled ? '20px' : '2px';
+    }
+    if (discordStatusText) {
+      discordStatusText.innerText = enabled ? 'Activé' : 'Désactivé';
+      discordStatusText.style.color = enabled ? 'var(--powder-cyan)' : 'var(--text-muted)';
+    }
+
+    if (rpcPreviewBox) {
+      rpcPreviewBox.style.opacity = enabled ? '1' : '0.4';
+    }
+
+    if (discordConnBadge) {
+      if (!enabled) {
+        discordConnBadge.style.borderColor = '#5a687d';
+        discordConnBadge.style.background = 'rgba(90, 104, 125, 0.15)';
+        discordConnBadge.style.color = '#8d9bb0';
+        if (discordDot) discordDot.style.background = '#5a687d';
+        if (discordBadgeLabel) discordBadgeLabel.innerText = 'Inactif';
+      } else if (isConnected) {
+        discordConnBadge.style.borderColor = '#2ecc71';
+        discordConnBadge.style.background = 'rgba(46, 204, 113, 0.15)';
+        discordConnBadge.style.color = '#2ecc71';
+        if (discordDot) discordDot.style.background = '#2ecc71';
+        if (discordBadgeLabel) discordBadgeLabel.innerText = 'Discord';
+      } else {
+        discordConnBadge.style.borderColor = '#e5a93c';
+        discordConnBadge.style.background = 'rgba(229, 169, 60, 0.15)';
+        discordConnBadge.style.color = '#e5a93c';
+        if (discordDot) discordDot.style.background = '#e5a93c';
+        if (discordBadgeLabel) discordBadgeLabel.innerText = 'Recherche...';
+      }
+    }
+  } catch (err) {
+    console.error('Failed to get discord settings:', err);
+  }
+}
+
+discordToggleContainer?.addEventListener('click', async (e) => {
+  e.preventDefault();
+  await ipcRenderer.invoke('toggle-discord-presence');
+  updateDiscordRpcUI();
+});
+
+let latestLiveDataPayload = null;
+let isLiveDemoActive = false;
+
+ipcRenderer.on('live-game-data', (event, payload) => {
+  latestLiveDataPayload = payload;
+  const liveData = payload?.liveData || payload;
+
+  if (liveData && liveData.active && liveData.data) {
+    const allPlayers = liveData.data.allPlayers || [];
+    const activePlayer = liveData.data.activePlayer || {};
+    const activeName = activePlayer.summonerName || (allPlayers[0] ? allPlayers[0].summonerName : '');
+    const p = allPlayers.find(item => item.summonerName && item.summonerName.toLowerCase() === activeName.toLowerCase()) || allPlayers[0];
+
+    const champ = p ? p.championName : 'League of Legends';
+    const scores = p ? p.scores || {} : {};
+    const kda = `${scores.kills || 0}/${scores.deaths || 0}/${scores.assists || 0}`;
+    const dpm = liveData.computed?.dpm || 0;
+    const cs = scores.creepScore || 0;
+
+    if (rpcPreviewDetails) rpcPreviewDetails.innerText = `BetaTester testing`;
+    if (rpcPreviewState) rpcPreviewState.innerText = `Powder is using her best tools to make you win`;
+  } else {
+    if (rpcPreviewDetails) rpcPreviewDetails.innerText = `BetaTester testing`;
+    if (rpcPreviewState) rpcPreviewState.innerText = `Powder is using her best tools to make you win`;
+  }
+  updateDiscordRpcUI();
+  renderLiveGameUI(payload);
+});
+
+// Render Live Game Telemetry inside Profile Subcategory Tab
+function renderLiveGameUI(payload = latestLiveDataPayload) {
+  const liveGameTabBody = document.getElementById('livegame-tab-body');
+  const statusBadge = document.getElementById('livegame-status-badge');
+  const statusText = document.getElementById('livegame-status-text');
+  const subtitle = document.getElementById('livegame-mode-subtitle');
+  if (!liveGameTabBody) return;
+
+  const liveData = payload?.liveData || payload;
+  const buildAdvice = payload?.buildAdvice;
+
+  if (!liveData || !liveData.active || !liveData.data) {
+    if (statusBadge) statusBadge.className = 'live-status-pill offline';
+    if (statusText) statusText.innerText = 'OFFLINE';
+    if (subtitle) subtitle.innerText = 'No active live game detected for this player.';
+
+    liveGameTabBody.innerHTML = `
+      <div style="text-align: center; padding: 40px 20px;">
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(0, 168, 232, 0.1); border: 2px solid rgba(0, 168, 232, 0.3); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto; color: var(--powder-cyan);">
+          <i data-lucide="video-off" style="width: 28px; height: 28px;"></i>
+        </div>
+        <h3 style="font-size: 16px; font-weight: 800; color: #fff; margin: 0 0 8px 0;">No Active Live Game</h3>
+        <p style="font-size: 12px; color: var(--text-muted); max-width: 420px; margin: 0 auto 20px auto; line-height: 1.6;">
+          This summoner is currently not in an active League of Legends match. Start a game or click <strong>Simulate Live Game</strong> to test real-time DPM and item recommendations!
+        </p>
+        <button id="start-demo-action-btn" class="pill-button" style="background: var(--powder-cyan); color: #000; font-weight: 800; padding: 10px 22px; font-size: 13px; border-radius: 20px; display: inline-flex; align-items: center; gap: 8px; border: none; cursor: pointer;">
+          <i data-lucide="play" style="width: 14px; height: 14px; stroke: #000 !important;"></i>
+          <span>Launch Live Simulator Demo</span>
+        </button>
+      </div>
+    `;
+
+    document.getElementById('start-demo-action-btn')?.addEventListener('click', () => {
+      isLiveDemoActive = true;
+      ipcRenderer.send('toggle-demo-mode', true);
+      const demoBtnText = document.getElementById('demo-btn-text');
+      if (demoBtnText) demoBtnText.innerText = 'Stop Live Simulation';
+    });
+
+    refreshLucideIcons();
+    return;
+  }
+
+  // Active Live Game Telemetry State
+  const gameData = liveData.data.gameData || {};
+  const activePlayer = liveData.data.activePlayer || {};
+  const allPlayers = liveData.data.allPlayers || [];
+  const computed = liveData.computed || {};
+
+  const gameTime = gameData.gameTime || 0;
+  const mins = Math.floor(gameTime / 60);
+  const secs = Math.floor(gameTime % 60).toString().padStart(2, '0');
+  const timeStr = `${mins}:${secs}`;
+
+  if (statusBadge) statusBadge.className = 'live-status-pill active';
+  if (statusText) statusText.innerText = `LIVE IN GAME • ${timeStr}`;
+  if (subtitle) subtitle.innerText = `${gameData.mapName || "Summoner's Rift"} • ${gameData.gameMode || 'CLASSIC'}`;
+
+  const searchedName = currentProfile ? currentProfile.gameName : (activePlayer.summonerName || '');
+  const activeP = allPlayers.find(p => p.summonerName && p.summonerName.toLowerCase().includes(searchedName.toLowerCase())) || allPlayers[0] || {};
+  const scores = activeP.scores || {};
+  const kdaStr = `${scores.kills || 0} / ${scores.deaths || 0} / ${scores.assists || 0}`;
+
+  const blueTeam = allPlayers.filter(p => p.team === 'ORDER' || p.team === 100);
+  const redTeam = allPlayers.filter(p => p.team === 'CHAOS' || p.team === 200 || p.team !== 'ORDER');
+
+  const adviceList = buildAdvice?.recommendedItems || ['Infinity Edge', 'Phantom Dancer', 'Lord Dominik\'s Regards'];
+
+  liveGameTabBody.innerHTML = `
+    <!-- Top Live Stats Summary Bar -->
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;">
+      <div style="background: #141926; border: 1px solid #232a3b; border-radius: 10px; padding: 12px 16px;">
+        <div style="font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Live DPM (Damage/Min)</div>
+        <div style="font-size: 20px; font-weight: 900; color: var(--powder-cyan); font-family: monospace;">${computed.dpm || 0} <span style="font-size: 11px; font-weight: 600; color: var(--text-muted);">DPM</span></div>
+      </div>
+
+      <div style="background: #141926; border: 1px solid #232a3b; border-radius: 10px; padding: 12px 16px;">
+        <div style="font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Current KDA</div>
+        <div style="font-size: 18px; font-weight: 900; color: #fff;">${kdaStr}</div>
+      </div>
+
+      <div style="background: #141926; border: 1px solid #232a3b; border-radius: 10px; padding: 12px 16px;">
+        <div style="font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">CS / Min</div>
+        <div style="font-size: 18px; font-weight: 900; color: var(--powder-gold);">${scores.creepScore || 0} <span style="font-size: 11px; font-weight: 600; color: var(--text-muted);">(${computed.csPerMin || 0}/m)</span></div>
+      </div>
+
+      <div style="background: #141926; border: 1px solid #232a3b; border-radius: 10px; padding: 12px 16px;">
+        <div style="font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Total Gold (GPM)</div>
+        <div style="font-size: 18px; font-weight: 900; color: #2ecc71;">${computed.gpm || 0} <span style="font-size: 11px; font-weight: 600; color: var(--text-muted);">g/min</span></div>
+      </div>
+    </div>
+
+    <!-- Powder Tactical Live Recommendation -->
+    <div style="background: linear-gradient(135deg, rgba(0, 168, 232, 0.1) 0%, rgba(20, 25, 38, 0.95) 100%); border: 1px solid rgba(0, 168, 232, 0.3); border-radius: 10px; padding: 14px 18px; margin-bottom: 20px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="sparkles" style="width: 16px; height: 16px; color: var(--powder-cyan);"></i>
+          <span style="font-size: 12px; font-weight: 800; color: var(--powder-cyan); text-transform: uppercase; letter-spacing: 0.5px;">Powder Live Build Advice</span>
+        </div>
+        <span style="font-size: 10px; color: var(--text-muted); font-weight: 700;">REAL-TIME RECOMMENDED</span>
+      </div>
+      <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        ${adviceList.map(item => `
+          <div style="background: #141926; border: 1px solid var(--powder-cyan); border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="shield-check" style="width: 12px; height: 12px; color: var(--powder-cyan);"></i>
+            <span>${item}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- Matchup Scoreboards (ORDER vs CHAOS) -->
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <!-- ORDER (Blue Team) -->
+      <div>
+        <div style="font-size: 11px; font-weight: 800; color: #3498db; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #3498db;"></span>
+          <span>Blue Team (ORDER)</span>
+        </div>
+        <div style="background: #141926; border: 1px solid #232a3b; border-radius: 8px; overflow: hidden;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+            <thead>
+              <tr style="border-bottom: 1px solid #232a3b; color: var(--text-muted); font-size: 10px; text-transform: uppercase;">
+                <th style="padding: 8px 12px; text-align: left;">Summoner</th>
+                <th style="padding: 8px 12px; text-align: center;">Champion</th>
+                <th style="padding: 8px 12px; text-align: center;">K / D / A</th>
+                <th style="padding: 8px 12px; text-align: center;">CS</th>
+                <th style="padding: 8px 12px; text-align: right;">Items</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(blueTeam.length ? blueTeam : [activeP]).map(p => {
+                const isMe = p.summonerName && activeP.summonerName && p.summonerName.toLowerCase() === activeP.summonerName.toLowerCase();
+                const pScores = p.scores || {};
+                return `
+                  <tr style="border-bottom: 1px solid #1c2333; ${isMe ? 'background: rgba(0, 168, 232, 0.15);' : ''}">
+                    <td style="padding: 8px 12px; font-weight: ${isMe ? '800' : '600'}; color: ${isMe ? 'var(--powder-cyan)' : '#fff'};">
+                      ${p.summonerName || 'Summoner'} ${isMe ? '⭐' : ''}
+                    </td>
+                    <td style="padding: 8px 12px; text-align: center; font-weight: 700; color: var(--powder-gold);">
+                      ${p.championName || 'Aphelios'}
+                    </td>
+                    <td style="padding: 8px 12px; text-align: center; font-weight: 700; color: #fff;">
+                      ${pScores.kills || 0}/${pScores.deaths || 0}/${pScores.assists || 0}
+                    </td>
+                    <td style="padding: 8px 12px; text-align: center; color: var(--text-muted);">
+                      ${pScores.creepScore || 0}
+                    </td>
+                    <td style="padding: 8px 12px; text-align: right;">
+                      <span style="font-size: 10px; color: var(--text-muted);">
+                        ${(p.items || []).map(i => i.displayName).join(', ') || 'Doran\'s Blade'}
+                      </span>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CHAOS (Red Team) -->
+      <div>
+        <div style="font-size: 11px; font-weight: 800; color: #e74c3c; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #e74c3c;"></span>
+          <span>Red Team (CHAOS)</span>
+        </div>
+        <div style="background: #141926; border: 1px solid #232a3b; border-radius: 8px; overflow: hidden;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+            <thead>
+              <tr style="border-bottom: 1px solid #232a3b; color: var(--text-muted); font-size: 10px; text-transform: uppercase;">
+                <th style="padding: 8px 12px; text-align: left;">Summoner</th>
+                <th style="padding: 8px 12px; text-align: center;">Champion</th>
+                <th style="padding: 8px 12px; text-align: center;">K / D / A</th>
+                <th style="padding: 8px 12px; text-align: center;">CS</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(redTeam.length ? redTeam : []).map(p => {
+                const pScores = p.scores || {};
+                return `
+                  <tr style="border-bottom: 1px solid #1c2333;">
+                    <td style="padding: 8px 12px; font-weight: 600; color: #fff;">
+                      ${p.summonerName || 'Opponent'}
+                    </td>
+                    <td style="padding: 8px 12px; text-align: center; font-weight: 700; color: #e74c3c;">
+                      ${p.championName || 'Aatrox'}
+                    </td>
+                    <td style="padding: 8px 12px; text-align: center; font-weight: 700; color: #fff;">
+                      ${pScores.kills || 0}/${pScores.deaths || 0}/${pScores.assists || 0}
+                    </td>
+                    <td style="padding: 8px 12px; text-align: center; color: var(--text-muted);">
+                      ${pScores.creepScore || 0}
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+
+  refreshLucideIcons();
+}
+
+// Setup Demo Mode Toggle Listener
+document.addEventListener('DOMContentLoaded', () => {
+  const toggleLiveDemoBtn = document.getElementById('toggle-live-demo-btn');
+  toggleLiveDemoBtn?.addEventListener('click', () => {
+    isLiveDemoActive = !isLiveDemoActive;
+    ipcRenderer.send('toggle-demo-mode', isLiveDemoActive);
+    const demoBtnText = document.getElementById('demo-btn-text');
+    if (demoBtnText) {
+      demoBtnText.innerText = isLiveDemoActive ? 'Stop Live Simulation' : 'Simulate Live Game';
+    }
+    if (toggleLiveDemoBtn) {
+      toggleLiveDemoBtn.style.background = isLiveDemoActive ? 'rgba(230, 57, 70, 0.2)' : 'rgba(0, 168, 232, 0.15)';
+      toggleLiveDemoBtn.style.borderColor = isLiveDemoActive ? '#e63946' : 'var(--powder-cyan)';
+      toggleLiveDemoBtn.style.color = isLiveDemoActive ? '#e63946' : 'var(--powder-cyan)';
+    }
+  });
+});
+
 // OriBot Verification Modal & Account Management Logic
 accountBtn?.addEventListener('click', async () => {
   const account = await ipcRenderer.invoke('get-user-account');
@@ -104,6 +426,7 @@ accountBtn?.addEventListener('click', async () => {
       apikeyInput.value = account.apiKey || '';
     }
   }
+  updateDiscordRpcUI();
   if (oribotStep1) oribotStep1.style.display = 'block';
   if (oribotStep2) oribotStep2.style.display = 'none';
   if (accountModal) accountModal.style.display = 'flex';
@@ -197,7 +520,10 @@ sidebarItems.forEach(item => {
 });
 
 function switchView(viewId) {
-  sidebarItems.forEach(i => {
+  const currentSidebarItems = document.querySelectorAll('.sidebar-item');
+  const currentAppViews = document.querySelectorAll('.app-view');
+
+  currentSidebarItems.forEach(i => {
     if (i.getAttribute('data-view') === viewId) {
       i.classList.add('active');
     } else {
@@ -205,17 +531,27 @@ function switchView(viewId) {
     }
   });
 
-  appViews.forEach(view => {
+  currentAppViews.forEach(view => {
     if (view.id === viewId) {
       view.classList.add('active');
+      view.style.display = 'flex';
     } else {
       view.classList.remove('active');
+      view.style.display = 'none';
     }
   });
 
   if (viewId === 'view-leaderboards') {
-    const regSelect = document.getElementById('leaderboard-region-select');
+    const regSelect = document.getElementById('leaderboard-region-select-main') || document.getElementById('leaderboard-region-select');
     loadLeaderboards(regSelect ? regSelect.value : 'EUW');
+  } else if (viewId === 'view-follows') {
+    loadFollowedPlayers();
+  } else if (viewId === 'view-ugg') {
+    if (!window.uggBuildLoaded) {
+      loadUggBuild('Jinx');
+      loadUggTierList();
+      window.uggBuildLoaded = true;
+    }
   }
 
   refreshLucideIcons();
@@ -368,16 +704,22 @@ function renderFollowsList() {
 if (toggleFollowBtn) {
   toggleFollowBtn.addEventListener('click', async () => {
     if (!currentProfile) return;
+    const solo = currentProfile.rankedSolo || {};
+    const isUnranked = !solo.tier || solo.tier.toUpperCase() === 'UNRANKED';
+    const rankStr = isUnranked
+      ? 'Unranked'
+      : `${solo.tier} ${solo.rank || ''} (${solo.lp || 0} LP)`.trim().replace(/\s+/g, ' ');
+
     const playerToToggle = {
       gameName: currentProfile.gameName,
       tagLine: currentProfile.tagLine,
-      region: searchRegion?.value || 'EUW',
-      rank: `${currentProfile.rankedSolo?.tier || 'Master'} ${currentProfile.rankedSolo?.lp || 1508} LP`,
-      winrate: `${currentProfile.rankedSolo?.winrate || 51}%`,
-      isLive: true,
-      liveChamp: "Singed",
-      gameTime: "12:15",
-      icon: currentProfile.profileIconUrl || '../assets/logo.png'
+      region: searchRegion?.value || currentProfile.region || 'EUW',
+      rank: rankStr,
+      winrate: `${solo.winrate || 0}%`,
+      isLive: false,
+      liveChamp: '',
+      gameTime: '',
+      icon: currentProfile.profileIconUrl || 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/23.jpg'
     };
 
     followedPlayersList = await ipcRenderer.invoke('toggle-follow-player', playerToToggle);
@@ -427,12 +769,19 @@ function performSearch(customQuery = null, customRegion = null) {
 
 updateStatsBtn?.addEventListener('click', () => {
   if (currentProfile) {
-    loadProfile({ gameName: currentProfile.gameName, tagLine: currentProfile.tagLine, region: searchRegion?.value || 'EUW' });
+    loadProfile({
+      gameName: currentProfile.gameName,
+      tagLine: currentProfile.tagLine,
+      region: searchRegion?.value || currentProfile.region || 'EUW',
+      forceRefresh: true
+    });
   }
 });
 
 function getRankEmblemUrl(tier) {
-  if (!tier || tier.toUpperCase() === 'UNRANKED') return '../assets/logo.png';
+  if (!tier || tier.toUpperCase() === 'UNRANKED') {
+    return 'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/unranked.png';
+  }
   const t = tier.toLowerCase();
   return `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/${t}.png`;
 }
@@ -447,11 +796,11 @@ function formatRankDisplay(tier, rank, lp) {
     return `${formattedTier} ${numLp} LP`;
   }
   
-  let divStr = rank || '';
-  if (divStr === 'I') divStr = '1';
-  else if (divStr === 'II') divStr = '2';
-  else if (divStr === 'III') divStr = '3';
-  else if (divStr === 'IV') divStr = '4';
+  let divStr = String(rank || '').trim().toUpperCase();
+  if (divStr === '1' || divStr === 'I') divStr = 'I';
+  else if (divStr === '2' || divStr === 'II') divStr = 'II';
+  else if (divStr === '3' || divStr === 'III') divStr = 'III';
+  else if (divStr === '4' || divStr === 'IV') divStr = 'IV';
 
   return `${formattedTier} ${divStr} ${numLp} LP`.trim().replace(/\s+/g, ' ');
 }
@@ -519,6 +868,73 @@ async function loadProfile(query = null) {
   }
 }
 
+function computeChampStatsFromMatches(matchesList, fallbackChamps = []) {
+  if (fallbackChamps && fallbackChamps.length > 0) {
+    return fallbackChamps
+      .map(c => ({
+        ...c,
+        name: c.name || 'Champion',
+        icon: c.icon || `https://ddragon.leagueoflegends.com/cdn/14.20.1/img/champion/${c.name}.png`,
+        games: c.games || c.totalMatches || 1,
+        totalMatches: c.games || c.totalMatches || 1,
+        kda: c.kda || (c.deaths > 0 ? ((Number(c.kills || 0) + Number(c.assists || 0)) / Number(c.deaths)).toFixed(2) : '3.00'),
+        winrate: typeof c.winrate === 'number' ? c.winrate : (parseInt(c.winrate, 10) || 0)
+      }))
+      .filter(c => c.games > 0)
+      .sort((a, b) => b.games - a.games);
+  }
+
+  if (matchesList && matchesList.length > 0) {
+    const map = {};
+    matchesList.forEach(m => {
+      const name = m.championName;
+      if (!name) return;
+      if (!map[name]) {
+        map[name] = {
+          name,
+          icon: m.championIcon || `https://ddragon.leagueoflegends.com/cdn/14.20.1/img/champion/${name}.png`,
+          games: 0,
+          wins: 0,
+          kills: 0,
+          deaths: 0,
+          assists: 0,
+          cs: 0
+        };
+      }
+      const c = map[name];
+      c.games += 1;
+      if (m.win) c.wins += 1;
+      c.kills += Number(m.kills || 0);
+      c.deaths += Number(m.deaths || 0);
+      c.assists += Number(m.assists || 0);
+      c.cs += Number(m.cs || 0);
+    });
+
+    const computed = Object.values(map).map(c => {
+      const wr = Math.round((c.wins / c.games) * 100);
+      const avgK = (c.kills / c.games).toFixed(1);
+      const avgD = (c.deaths / c.games).toFixed(1);
+      const avgA = (c.assists / c.games).toFixed(1);
+      const kda = c.deaths > 0 ? ((c.kills + c.assists) / c.deaths).toFixed(2) : ((c.kills + c.assists) > 0 ? '3.50' : '2.00');
+      const avgCs = Math.round(c.cs / c.games);
+      return {
+        ...c,
+        totalMatches: c.games,
+        winrate: wr,
+        kills: avgK,
+        deaths: avgD,
+        assists: avgA,
+        kda,
+        cs: avgCs
+      };
+    }).sort((a, b) => b.games - a.games);
+
+    if (computed.length > 0) return computed;
+  }
+
+  return [];
+}
+
 // Render Complete Profile UI
 function renderProfileUI(profile) {
   const notFoundCard = document.getElementById('profile-not-found-card');
@@ -548,19 +964,24 @@ function renderProfileUI(profile) {
   if (profileSubnav) profileSubnav.style.display = 'flex';
   if (gridLayout) gridLayout.style.display = 'grid';
 
-  if (profName) profName.innerText = profile.gameName || 'Lesbian princess';
-  if (profTag) profTag.innerText = `#${profile.tagLine || 'UwU'}`;
-  if (profLevel) profLevel.innerText = profile.level || 707;
+  if (profName) profName.innerText = profile.gameName || 'Summoner';
+  if (profTag) profTag.innerText = `#${profile.tagLine || ''}`;
+  const levelVal = profile.level || profile.summonerLevel || 1;
+  if (profLevel) profLevel.innerText = levelVal;
 
   const solo = profile.rankedSolo || {};
   const flex = profile.rankedFlex || {};
 
-  const ladderInfo = calculateLadderPercent(solo.tier || 'Master', solo.rank || '', solo.lp || 1508);
+  const isSoloUnranked = !solo.tier || solo.tier.toUpperCase() === 'UNRANKED';
+  const ladderInfo = isSoloUnranked
+    ? { rankNum: 'N/A', topPct: 'top 100%' }
+    : calculateLadderPercent(solo.tier, solo.rank || '', solo.lp || 0);
+
   if (profLadder) profLadder.innerHTML = `Ladder Rank <strong>#${ladderInfo.rankNum}</strong> (${ladderInfo.topPct})`;
 
   const followersCountText = document.getElementById('followers-count-text');
   if (followersCountText) {
-    const fCount = profile.followersCount || (solo.tier === 'Master' ? 142 : 38);
+    const fCount = profile.followersCount || (isSoloUnranked ? 0 : 38);
     followersCountText.innerText = `${fCount} Followers`;
   }
 
@@ -577,31 +998,49 @@ function renderProfileUI(profile) {
     };
   }
 
-  const soloFormatted = formatRankDisplay(solo.tier || 'Master', solo.rank || '', solo.lp || 1508);
+  const soloFormatted = isSoloUnranked ? 'Unranked' : formatRankDisplay(solo.tier, solo.rank || '', solo.lp || 0);
   if (soloTierName) soloTierName.innerText = soloFormatted;
-  if (soloLp) soloLp.innerText = `${solo.wins || 0}W ${solo.losses || 0}L`;
+  if (soloLp) soloLp.innerText = isSoloUnranked ? `${solo.wins || 0}W ${solo.losses || 0}L` : `${solo.wins || 0}W ${solo.losses || 0}L`;
   if (soloWrText) soloWrText.innerText = `${solo.winrate || 0}% Win Rate`;
 
   const soloTierImg = document.getElementById('solo-tier-img');
   if (soloTierImg) {
-    soloTierImg.src = getRankEmblemUrl(solo.tier || 'master');
-    soloTierImg.onerror = () => { soloTierImg.src = '../assets/logo.png'; };
+    soloTierImg.src = getRankEmblemUrl(solo.tier || 'Unranked');
+    soloTierImg.onerror = () => { soloTierImg.src = 'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/unranked.png'; };
   }
 
-  const flexFormatted = formatRankDisplay(flex.tier || 'Platinum', flex.rank || '3', flex.lp || 60);
+  const isFlexUnranked = !flex.tier || flex.tier.toUpperCase() === 'UNRANKED';
+  const flexFormatted = isFlexUnranked ? 'Unranked' : formatRankDisplay(flex.tier, flex.rank || '', flex.lp || 0);
   if (flexTierName) flexTierName.innerText = flexFormatted;
-  if (flexLp) flexLp.innerText = `${flex.wins || 0}W ${flex.losses || 0}L`;
+  if (flexLp) flexLp.innerText = isFlexUnranked ? `${flex.wins || 0}W ${flex.losses || 0}L` : `${flex.wins || 0}W ${flex.losses || 0}L`;
   if (flexWrText) flexWrText.innerText = `${flex.winrate || 0}% Win Rate`;
 
   const flexTierImg = document.getElementById('flex-tier-img');
   if (flexTierImg) {
-    flexTierImg.src = getRankEmblemUrl(flex.tier || 'platinum');
-    flexTierImg.onerror = () => { flexTierImg.src = '../assets/logo.png'; };
+    flexTierImg.src = getRankEmblemUrl(flex.tier || 'Unranked');
+    flexTierImg.onerror = () => { flexTierImg.src = 'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/unranked.png'; };
   }
 
-  const validChamps = (profile.topChampions || [])
-    .filter(c => c.games > 0)
-    .sort((a, b) => b.games - a.games);
+  const matches = profile.matches || [];
+  
+  // Filter matches for Overview & Champion Stats: All Ranked + Normal Draft + Swiftplay / Quickplay
+  const overviewMatches = matches.filter(m => {
+    const modeStr = String(m.mode || '').toLowerCase();
+    const qId = m.queueId;
+    return modeStr.includes('ranked') ||
+           modeStr.includes('draft') ||
+           modeStr.includes('swift') ||
+           modeStr.includes('quick') ||
+           [420, 440, 400, 490, 480].includes(qId);
+  });
+  const useOverviewMatches = overviewMatches.length > 0 ? overviewMatches : matches;
+
+  const validChamps = computeChampStatsFromMatches(useOverviewMatches, profile.topChampions || []);
+
+  // Filter strictly Solo Q Ranked matches for SOLO Q tab
+  const soloqMatches = matches.filter(m => m.queueId === 420 || (m.mode && m.mode.toLowerCase().includes('ranked solo')));
+  const displaySoloq = soloqMatches.length > 0 ? soloqMatches : matches.filter(m => m.mode && m.mode.toLowerCase().includes('ranked'));
+  const soloqChamps = computeChampStatsFromMatches(displaySoloq, []);
 
   const top5Champs = validChamps.slice(0, 5);
 
@@ -623,7 +1062,7 @@ function renderProfileUI(profile) {
         </div>
       `).join('');
     } else {
-      topChampsList.innerHTML = `<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 12px;">No Ranked Solo champions played.</div>`;
+      topChampsList.innerHTML = `<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 12px;">No champions played recently.</div>`;
     }
   }
 
@@ -655,7 +1094,6 @@ function renderProfileUI(profile) {
 
   renderRank100Chart(profile);
 
-  const matches = profile.matches || [];
   const summaryWr = document.getElementById('summary-wr');
   const summaryKda = document.getElementById('summary-kda');
 
@@ -666,10 +1104,10 @@ function renderProfileUI(profile) {
     const wins = matches.filter(m => m.win).length;
     const wr = Math.round((wins / matches.length) * 100);
     let totalK = 0, totalD = 0, totalA = 0;
-    matches.forEach(m => { totalK += m.kills; totalD += m.deaths; totalA += m.assists; });
+    matches.forEach(m => { totalK += (m.kills || 0); totalD += (m.deaths || 0); totalA += (m.assists || 0); });
     const kda = ((totalK + totalA) / Math.max(1, totalD)).toFixed(2);
 
-    if (summaryWr) summaryWr.innerText = `${wr}% WR (Last ${matches.length})`;
+    if (summaryWr) summaryWr.innerText = `${wr}% WR (Last ${matches.length} games)`;
     if (summaryKda) summaryKda.innerText = `${kda} KDA`;
   } else {
     if (matchCardsContainer) matchCardsContainer.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--text-muted);">No match history found.</div>`;
@@ -681,9 +1119,33 @@ function renderProfileUI(profile) {
   const soloqContainer = document.getElementById('soloq-match-cards-container');
   const soloqSummaryWr = document.getElementById('soloq-summary-wr');
   const soloqSummaryKda = document.getElementById('soloq-summary-kda');
+  const soloqChampsList = document.getElementById('soloq-champs-list');
 
-  const soloqMatches = matches.filter(m => m.queueId === 420 || (m.mode && m.mode.toLowerCase().includes('ranked solo')));
-  const displaySoloq = soloqMatches.length > 0 ? soloqMatches : matches.filter(m => m.mode && m.mode.toLowerCase().includes('ranked'));
+  if (soloqChampsList) {
+    if (soloqChamps.length > 0) {
+      soloqChampsList.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          ${soloqChamps.map(c => `
+            <div class="champ-stat-row" style="padding: 10px 14px; background: #141926; border-radius: 8px; border: 1px solid #232a3b;">
+              <div class="champ-info">
+                <img src="${c.icon}" class="champ-icon-sm" style="width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--powder-gold);" alt="${c.name}" onerror="this.src='../assets/logo.png'">
+                <div>
+                  <div class="champ-name" style="font-size: 13px; color: #fff;">${c.name}</div>
+                  <div class="champ-kda" style="font-size: 11px;">${c.kda} KDA (${c.kills} / ${c.deaths} / ${c.assists})</div>
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 13px; font-weight: 800; color: ${c.winrate >= 50 ? '#2ecc71' : '#e63946'};">${c.winrate}% WR</div>
+                <div style="font-size: 10px; color: var(--powder-gold); font-weight: 700;">${c.games} Solo Q game${c.games > 1 ? 's' : ''}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    } else {
+      soloqChampsList.innerHTML = `<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 12px;">No Ranked Solo / Duo champion stats available.</div>`;
+    }
+  }
 
   if (soloqContainer) {
     if (displaySoloq.length > 0) {
@@ -691,7 +1153,7 @@ function renderProfileUI(profile) {
       const wins = displaySoloq.filter(m => m.win).length;
       const wr = Math.round((wins / displaySoloq.length) * 100);
       let totalK = 0, totalD = 0, totalA = 0;
-      displaySoloq.forEach(m => { totalK += m.kills; totalD += m.deaths; totalA += m.assists; });
+      displaySoloq.forEach(m => { totalK += (m.kills || 0); totalD += (m.deaths || 0); totalA += (m.assists || 0); });
       const kda = ((totalK + totalA) / Math.max(1, totalD)).toFixed(2);
       if (soloqSummaryWr) soloqSummaryWr.innerText = `${wr}% WR (${displaySoloq.length} games)`;
       if (soloqSummaryKda) soloqSummaryKda.innerText = `${kda} KDA`;
@@ -702,26 +1164,67 @@ function renderProfileUI(profile) {
     }
   }
 
-  const tierList = (profile.personalTierList && profile.personalTierList.length > 0) ? profile.personalTierList : (profile.topChampions || []).slice(0, 3).map((c, idx) => ({
-    champ: c.name,
-    winrate: c.winrate,
-    tier: idx === 0 ? "S+" : idx === 1 ? "S" : "A",
-    icon: c.icon
-  }));
-
   if (tierlistContainer) {
-    tierlistContainer.innerHTML = tierList.map(t => `
-      <div style="background: #161b28; border: 1px solid #283044; border-radius: 8px; padding: 14px; text-align: center;">
-        <span class="edit-badge" style="font-size: 10px; background: rgba(229,169,60,0.2); color: var(--powder-gold); border-color: var(--powder-gold);">${t.tier} Tier</span>
-        <img src="${t.icon}" style="width: 52px; height: 52px; border-radius: 50%; margin: 10px auto; display: block; border: 2px solid var(--powder-cyan);" onerror="this.src='../assets/logo.png'">
-        <div style="font-weight: 800; font-size: 14px; color: var(--text-main);">${t.champ}</div>
-        <div style="font-weight: 800; font-size: 12px; color: #2ecc71; margin-top: 2px;">${t.winrate}% WR</div>
-      </div>
-    `).join('');
+    if (validChamps.length > 0) {
+      tierlistContainer.innerHTML = validChamps.map((c, idx) => {
+        const tierLabel = idx === 0 ? 'S+' : idx === 1 ? 'S' : idx === 2 ? 'A+' : idx < 5 ? 'A' : 'B+';
+        const tierColor = idx === 0 ? '#ff4757' : idx === 1 ? 'var(--powder-gold)' : idx === 2 ? 'var(--powder-cyan)' : '#70a1ff';
+        const tierBg = idx === 0 ? 'rgba(255, 71, 87, 0.2)' : idx === 1 ? 'rgba(229, 169, 60, 0.2)' : idx === 2 ? 'rgba(0, 168, 232, 0.2)' : 'rgba(112, 161, 255, 0.2)';
+
+        const kills = c.kills !== undefined ? c.kills : '0.0';
+        const deaths = c.deaths !== undefined ? c.deaths : '0.0';
+        const assists = c.assists !== undefined ? c.assists : '0.0';
+        const csVal = c.cs ? `${c.cs} CS avg` : '';
+        const dmgVal = c.damage ? `${Number(c.damage).toLocaleString()} Dmg` : '';
+
+        return `
+          <div style="background: #141926; border: 1px solid #232a3b; border-radius: 10px; padding: 16px; position: relative; transition: transform 0.2s, border-color 0.2s;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span style="font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 12px; background: ${tierBg}; color: ${tierColor}; border: 1px solid ${tierColor};">
+                ${tierLabel} Tier
+              </span>
+              <span style="font-size: 11px; font-weight: 700; color: var(--text-muted);">
+                Rank #${idx + 1}
+              </span>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+              <img src="${c.icon}" style="width: 54px; height: 54px; border-radius: 50%; border: 2px solid ${tierColor}; object-fit: cover;" alt="${c.name}" onerror="this.src='../assets/logo.png'">
+              <div>
+                <div style="font-weight: 800; font-size: 15px; color: #fff;">${c.name}</div>
+                <div style="font-size: 12px; font-weight: 700; color: ${c.winrate >= 50 ? '#2ecc71' : '#e63946'}; margin-top: 2px;">
+                  ${c.winrate}% WR <span style="font-size: 10px; color: var(--text-muted); font-weight: 400;">(${c.games} game${c.games > 1 ? 's' : ''})</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="background: #0f131d; border-radius: 6px; padding: 10px; font-size: 11px; display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--text-muted);">KDA Ratio</span>
+                <strong style="color: var(--powder-cyan); font-weight: 800;">${c.kda} KDA</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px;">
+                <span style="color: var(--text-muted);">Avg K / D / A</span>
+                <span style="color: #fff; font-weight: 700;">${kills} / ${deaths} / ${assists}</span>
+              </div>
+              ${(csVal || dmgVal) ? `
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px; margin-top: 2px;">
+                  <span style="color: var(--text-muted);">${csVal}</span>
+                  <span style="color: var(--powder-gold); font-weight: 700;">${dmgVal}</span>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    } else {
+      tierlistContainer.innerHTML = `<div style="grid-column: span 3; text-align: center; padding: 40px; color: var(--text-muted);">Aucune statistique de champion trouvée.</div>`;
+    }
   }
 
   renderLpChart();
   updateFollowBtnState();
+  renderLiveGameUI();
 
   refreshLucideIcons();
 }
@@ -731,6 +1234,11 @@ function renderMatchCardHTML(m) {
   while (itemEntries.length < 7) {
     itemEntries.push(null);
   }
+
+  // Swap item #4 (index 3) with item #7 (index 6)
+  const tempItem = itemEntries[3];
+  itemEntries[3] = itemEntries[6];
+  itemEntries[6] = tempItem;
 
   const itemsHTML = itemEntries.map(item => {
     if (!item) return `<div class="item-slot empty-slot"></div>`;
@@ -860,27 +1368,19 @@ function calculateRealRankPoints(profile) {
   const matches = (profile.matches || []).filter(m => m.mode && m.mode.toLowerCase().includes('ranked'));
   const useMatches = matches.length > 0 ? matches : (profile.matches || []);
 
-  if (useMatches.length === 0 && !profile.isRealData) {
+  const chronoMatches = [...useMatches].reverse();
+  if (chronoMatches.length === 0) {
     return null;
   }
 
-  const chronoMatches = [...useMatches].reverse();
   let startVal = currentVal;
   for (const m of useMatches) {
     const lpDelta = m.win ? 0.25 : -0.22;
     startVal -= lpDelta;
   }
 
-  const points = [];
+  const points = [Number(Math.max(0, startVal).toFixed(2))];
   let val = Math.max(0, startVal);
-  const numMatches = chronoMatches.length;
-  const fillCount = Math.max(0, 100 - numMatches);
-
-  for (let i = 0; i < fillCount; i++) {
-    const noise = (Math.random() * 0.12 - 0.06);
-    val = Math.max(0, val + noise);
-    points.push(Number(val.toFixed(2)));
-  }
 
   for (const m of chronoMatches) {
     const lpDelta = m.win ? 0.25 : -0.22;
@@ -892,7 +1392,7 @@ function calculateRealRankPoints(profile) {
     points[points.length - 1] = Number(currentVal.toFixed(2));
   }
 
-  return { points: points.slice(0, 100), currentVal };
+  return { points, currentVal, count: chronoMatches.length };
 }
 
 function renderRank100Chart(profile) {
@@ -912,7 +1412,8 @@ function renderRank100Chart(profile) {
   if (rank100ChartInstance) rank100ChartInstance.destroy();
 
   const dataPoints = realData.points;
-  const labels = Array.from({ length: 100 }, (_, i) => i === 0 ? '100 games ago' : i === 99 ? 'Last game' : '');
+  const count = realData.count;
+  const labels = Array.from({ length: dataPoints.length }, (_, i) => i === 0 ? `${count} games ago` : i === dataPoints.length - 1 ? 'Last game' : '');
 
   const minVal = Math.min(...dataPoints);
   const maxVal = Math.max(...dataPoints);
@@ -1036,43 +1537,69 @@ function renderLpChart() {
 }
 
 async function loadLeaderboards(region = 'EUW') {
-  const leaderboardTableBody = document.getElementById('leaderboard-table-body');
-  if (!leaderboardTableBody) return;
-  
-  leaderboardTableBody.innerHTML = `
+  const targets = Array.from(document.querySelectorAll('#leaderboard-table-body, #leaderboard-table-body-main'));
+  if (targets.length === 0) return;
+
+  const loadingHTML = `
     <tr>
-      <td colspan="6" style="text-align: center; padding: 30px; color: var(--text-muted);">
-        <i data-lucide="loader-2" class="spin" style="width: 20px; height: 20px; margin-bottom: 8px;"></i>
-        <div>Loading ${region} Ranked Leaderboard...</div>
+      <td colspan="6" style="text-align: center; padding: 40px; color: var(--powder-cyan);">
+        <i data-lucide="loader-2" class="spin" style="width: 24px; height: 24px; margin-bottom: 8px;"></i>
+        <div style="font-weight: 800; font-size: 13px;">Chargement du classement Challenger ${region} en direct...</div>
       </td>
     </tr>
   `;
+
+  targets.forEach(t => t.innerHTML = loadingHTML);
   refreshLucideIcons();
 
   try {
     const entries = await ipcRenderer.invoke('get-leaderboard', region);
     if (!entries || entries.length === 0) {
-      leaderboardTableBody.innerHTML = `
+      const emptyHTML = `
         <tr>
-          <td colspan="6" style="text-align: center; padding: 20px; color: var(--text-muted);">No leaderboard entries found.</td>
+          <td colspan="6" style="text-align: center; padding: 24px; color: var(--text-muted);">No leaderboard entries found for ${region}.</td>
         </tr>
       `;
+      targets.forEach(t => t.innerHTML = emptyHTML);
       return;
     }
 
-    leaderboardTableBody.innerHTML = entries.map(e => {
-      const badgeClass = e.rank === 1 ? 'top1' : e.rank === 2 ? 'top2' : e.rank === 3 ? 'top3' : 'other';
+    const rowsHTML = entries.map(e => {
+      const isTop1 = e.rank === 1;
+      const isTop2 = e.rank === 2;
+      const isTop3 = e.rank === 3;
+      const badgeBg = isTop1 ? 'rgba(255, 71, 87, 0.25)' : isTop2 ? 'rgba(229, 169, 60, 0.25)' : isTop3 ? 'rgba(0, 168, 232, 0.25)' : 'rgba(255, 255, 255, 0.05)';
+      const badgeColor = isTop1 ? '#ff4757' : isTop2 ? 'var(--powder-gold)' : isTop3 ? 'var(--powder-cyan)' : '#8d9bb0';
+      const crownIcon = isTop1 ? '👑 ' : isTop2 ? '🥈 ' : isTop3 ? '🥉 ' : '';
+
+      const iconUrl = e.profileIconUrl || '../assets/logo.png';
+
       return `
-        <tr class="leaderboard-row" data-name="${e.summonerName}" data-region="${region}" style="cursor: pointer;">
-          <td><span class="rank-badge-num ${badgeClass}">${e.rank}</span></td>
-          <td style="font-weight: 800; color: var(--powder-cyan);">${e.summonerName}</td>
-          <td><span class="edit-badge" style="font-size: 10px; background: rgba(229,169,60,0.2); color: var(--powder-gold);">${e.tier}</span></td>
-          <td style="font-weight: 800;">${e.lp.toLocaleString()} LP</td>
-          <td style="color: ${e.winrate >= 50 ? '#2ecc71' : '#e63946'}; font-weight: 800;">${e.winrate}%</td>
-          <td style="font-size: 11px; color: var(--text-muted);">${e.wins}W ${e.losses}L</td>
+        <tr class="leaderboard-row" data-name="${e.summonerName}" data-region="${region}" style="border-bottom: 1px solid rgba(255,255,255,0.04); cursor: pointer; transition: background 0.2s;">
+          <td style="padding: 10px 16px;">
+            <span style="font-size: 11px; font-weight: 900; padding: 4px 10px; border-radius: 12px; background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeColor}; display: inline-block;">
+              ${crownIcon}#${e.rank}
+            </span>
+          </td>
+          <td style="padding: 10px 16px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <img src="${iconUrl}" style="width: 30px; height: 30px; border-radius: 50%; border: 1px solid ${badgeColor}; object-fit: cover;" onerror="this.src='../assets/logo.png'">
+              <span style="font-weight: 800; color: #fff; font-size: 13px;">${e.summonerName}</span>
+            </div>
+          </td>
+          <td style="padding: 10px 16px;">
+            <span style="font-size: 10px; font-weight: 800; background: rgba(229,169,60,0.2); color: var(--powder-gold); border: 1px solid var(--powder-gold); padding: 3px 8px; border-radius: 6px;">
+              ${e.tier}
+            </span>
+          </td>
+          <td style="padding: 10px 16px; font-weight: 800; color: var(--powder-cyan);">${Number(e.lp).toLocaleString()} LP</td>
+          <td style="padding: 10px 16px; color: ${e.winrate >= 50 ? '#2ecc71' : '#e63946'}; font-weight: 800;">${e.winrate}% WR</td>
+          <td style="padding: 10px 16px; text-align: right; font-size: 11px; color: var(--text-muted); font-weight: 700;">${e.wins}W ${e.losses}L</td>
         </tr>
       `;
     }).join('');
+
+    targets.forEach(t => t.innerHTML = rowsHTML);
 
     document.querySelectorAll('.leaderboard-row').forEach(row => {
       row.addEventListener('click', () => {
@@ -1081,13 +1608,16 @@ async function loadLeaderboards(region = 'EUW') {
         performSearch(name, reg);
       });
     });
+
+    refreshLucideIcons();
   } catch (err) {
     console.error('Failed to load leaderboard:', err);
-    leaderboardTableBody.innerHTML = `
+    const errorHTML = `
       <tr>
         <td colspan="6" style="text-align: center; padding: 20px; color: #e63946;">Failed to load leaderboard data.</td>
       </tr>
     `;
+    targets.forEach(t => t.innerHTML = errorHTML);
   }
 }
 
@@ -1095,6 +1625,7 @@ let matchOffset = 5;
 
 document.addEventListener('DOMContentLoaded', () => {
   refreshLucideIcons();
+  loadFollowedPlayers();
 
   const rankProgressionCard = document.getElementById('rank-progression-card');
   const rankAccordionToggle = document.getElementById('rank-accordion-toggle');
@@ -1122,20 +1653,24 @@ document.addEventListener('DOMContentLoaded', () => {
     notFoundHomeBtn.addEventListener('click', () => switchView('view-home'));
   }
 
-  const lboardRegionSelect = document.getElementById('leaderboard-region-select');
-  if (lboardRegionSelect) {
-    lboardRegionSelect.addEventListener('change', () => {
-      loadLeaderboards(lboardRegionSelect.value);
+  ['leaderboard-region-select', 'leaderboard-region-select-main'].forEach(id => {
+    const sel = document.getElementById(id);
+    sel?.addEventListener('change', () => {
+      const otherId = id === 'leaderboard-region-select' ? 'leaderboard-region-select-main' : 'leaderboard-region-select';
+      const other = document.getElementById(otherId);
+      if (other) other.value = sel.value;
+      loadLeaderboards(sel.value);
     });
-  }
+  });
 
-  const refreshLboardBtn = document.getElementById('refresh-leaderboard-btn');
-  if (refreshLboardBtn) {
-    refreshLboardBtn.addEventListener('click', () => {
-      const reg = lboardRegionSelect ? lboardRegionSelect.value : 'EUW';
+  ['refresh-leaderboard-btn', 'refresh-leaderboard-btn-main'].forEach(id => {
+    const btn = document.getElementById(id);
+    btn?.addEventListener('click', () => {
+      const regSelect = document.getElementById('leaderboard-region-select') || document.getElementById('leaderboard-region-select-main');
+      const reg = regSelect ? regSelect.value : 'EUW';
       loadLeaderboards(reg);
     });
-  }
+  });
 
   const loadMoreBtn = document.getElementById('load-more-matches-btn');
   if (loadMoreBtn) {
@@ -1175,8 +1710,512 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  // Profile Subnav Tab Navigation Switcher (Overview, SOLO Q RANKED, Champion Stats, PLUS Tier List)
+  const profileTabItems = document.querySelectorAll('.profile-subnav [data-tab]');
+  const profileTabPanes = document.querySelectorAll('.right-col .tab-pane');
+
+  profileTabItems.forEach(tab => {
+    tab?.addEventListener('click', () => {
+      const targetId = tab.getAttribute('data-tab');
+      profileTabItems.forEach(t => t.classList.remove('active'));
+      profileTabPanes.forEach(p => {
+        p.classList.remove('active');
+        p.style.display = 'none';
+      });
+
+      tab.classList.add('active');
+      const targetPane = document.getElementById(targetId);
+      if (targetPane) {
+        targetPane.classList.add('active');
+        targetPane.style.display = 'block';
+      }
+    });
+  });
+
+  // Powder Meta Tab Navigation Switcher
+  const uggTabItems = document.querySelectorAll('[data-ugg-tab]');
+  const uggTabPanes = document.querySelectorAll('.ugg-tab-pane');
+
+  uggTabItems.forEach(tab => {
+    tab?.addEventListener('click', () => {
+      const targetId = tab.getAttribute('data-ugg-tab');
+      uggTabItems.forEach(t => t.classList.remove('active'));
+      uggTabPanes.forEach(p => {
+        p.classList.remove('active');
+        p.style.display = 'none';
+      });
+
+      tab.classList.add('active');
+      const targetPane = document.getElementById(targetId);
+      if (targetPane) {
+        targetPane.classList.add('active');
+        targetPane.style.display = 'block';
+      }
+    });
+  });
+
+  // Powder Champion Search & Matchup Handlers
+  const uggChampBtn = document.getElementById('ugg-champ-search-btn');
+  const uggChampInput = document.getElementById('ugg-champ-input');
+  const uggRoleSelect = document.getElementById('ugg-role-select');
+  const uggOppInput = document.getElementById('ugg-opp-input');
+
+  const triggerBuildSearch = () => {
+    const champ = uggChampInput?.value.trim();
+    const role = uggRoleSelect?.value || 'auto';
+    const opp = uggOppInput?.value.trim() || '';
+    if (champ) loadUggBuild(champ, role, opp);
+  };
+
+  if (uggChampBtn) uggChampBtn.addEventListener('click', triggerBuildSearch);
+  if (uggChampInput) {
+    uggChampInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') triggerBuildSearch();
+    });
+  }
+  if (uggOppInput) {
+    uggOppInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') triggerBuildSearch();
+    });
+  }
+  if (uggRoleSelect) {
+    uggRoleSelect.addEventListener('change', triggerBuildSearch);
+  }
+
+  // Role Filters
+  const roleButtons = document.querySelectorAll('#ugg-role-filters .tag-chip');
+  roleButtons.forEach(btn => {
+    btn?.addEventListener('click', () => {
+      roleButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const role = btn.getAttribute('data-role');
+      filterUggTierList(role);
+    });
+  });
+
+  // Refresh Tier List
+  const refreshTierBtn = document.getElementById('ugg-refresh-tierlist-btn');
+  if (refreshTierBtn) {
+    refreshTierBtn.addEventListener('click', () => loadUggTierList());
+  }
+
+  // Player Search Button
+  const uggPlayerBtn = document.getElementById('ugg-player-search-btn');
+  const uggPlayerInput = document.getElementById('ugg-player-input');
+  const uggPlayerRegion = document.getElementById('ugg-player-region');
+
+  if (uggPlayerBtn) {
+    uggPlayerBtn.addEventListener('click', () => {
+      const val = uggPlayerInput?.value.trim();
+      const reg = uggPlayerRegion?.value || 'EUW';
+      if (val) loadUggPlayerProfile(val, reg);
+    });
+  }
+  if (uggPlayerInput) {
+    uggPlayerInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const val = uggPlayerInput?.value.trim();
+        const reg = uggPlayerRegion?.value || 'EUW';
+        if (val) loadUggPlayerProfile(val, reg);
+      }
+    });
+  }
 });
+
+let cachedTierList = [];
+
+async function loadUggBuild(championName, role = 'auto', opponentName = '') {
+  const container = document.getElementById('ugg-build-container');
+  if (!container) return;
+
+  const matchTitle = opponentName ? `${championName} vs ${opponentName}` : championName;
+
+  container.innerHTML = `
+    <div style="text-align: center; padding: 40px; color: var(--powder-cyan); background: #0b0f1a; border: 1px solid #1f2a3e; border-radius: 4px;">
+      <i data-lucide="loader-2" class="spin" style="width: 32px; height: 32px; margin-bottom: 10px;"></i>
+      <div style="font-weight: 800; font-size: 14px; font-family: monospace;">Analyse des métriques & du matchup pour ${matchTitle}...</div>
+    </div>
+  `;
+  refreshLucideIcons();
+
+  try {
+    const build = await ipcRenderer.invoke('ugg:get-build', { championName, role, opponentName });
+    if (!build) {
+      container.innerHTML = `<div style="padding: 20px; color: #ff4757; font-weight: 800; background: #0b0f1a; border: 1px solid #ff4757; border-radius: 4px;">Impossible de trouver les données de build pour "${championName}".</div>`;
+      return;
+    }
+
+    const { champion, role: displayRole, matchup, patch, runes, startingItems, coreItems, situationalItems, spells, skillPath, skillMaxOrder } = build;
+
+    let matchupHTML = '';
+    if (matchup && matchup.opponent) {
+      matchupHTML = `
+        <div style="margin-bottom: 16px; background: #0b0f1a; border: 1px solid #1f2a3e; border-left: 4px solid ${matchup.color}; border-radius: 4px; padding: 16px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #1c2538;">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; color: #fff; font-size: 13px; font-family: monospace; letter-spacing: 0.5px;">
+              <i data-lucide="swords" style="width: 16px; height: 16px; color: #ff4757;"></i>
+              <span>MATCHUP DIRECT : ${champion.name.toUpperCase()} (${displayRole}) VS ${matchup.opponent.name.toUpperCase()}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              ${matchup.goldDiff ? `<span style="font-size: 11px; background: rgba(229, 169, 60, 0.12); color: var(--powder-gold); padding: 3px 8px; border-radius: 2px; font-weight: 800; border: 1px solid var(--powder-gold); font-family: monospace;">${matchup.goldDiff}</span>` : ''}
+              <span style="font-size: 11px; background: rgba(0, 168, 232, 0.12); color: var(--powder-cyan); padding: 3px 8px; border-radius: 2px; font-weight: 800; border: 1px solid var(--powder-cyan); font-family: monospace;">
+                ${matchup.winRate}% WIN RATE VS ${matchup.opponent.name.toUpperCase()}
+              </span>
+              <span style="font-size: 11px; background: ${matchup.color}22; color: ${matchup.color}; padding: 3px 8px; border-radius: 2px; font-weight: 800; border: 1px solid ${matchup.color}; font-family: monospace;">
+                ${matchup.label}
+              </span>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; gap: 12px; background: #121826; padding: 10px 14px; border-radius: 4px; border: 1px solid #233047; flex: 1;">
+              <img src="${champion.icon}" style="width: 44px; height: 44px; border-radius: 4px; border: 2px solid var(--powder-cyan);" alt="${champion.name}">
+              <div>
+                <div style="font-weight: 800; color: #fff; font-size: 14px;">${champion.name}</div>
+                <div style="font-size: 11px; color: var(--powder-cyan); font-weight: 700; font-family: monospace;">VOTRE CHAMPION (${displayRole})</div>
+              </div>
+            </div>
+
+            <div style="font-size: 18px; font-weight: 900; color: #ff4757; font-family: monospace; letter-spacing: 1px;">VS</div>
+
+            <div style="display: flex; align-items: center; gap: 12px; background: #121826; padding: 10px 14px; border-radius: 4px; border: 1px solid #ff475755; flex: 1;">
+              <img src="${matchup.opponent.icon}" style="width: 44px; height: 44px; border-radius: 4px; border: 2px solid #ff4757;" alt="${matchup.opponent.name}">
+              <div>
+                <div style="font-weight: 800; color: #fff; font-size: 14px;">${matchup.opponent.name}</div>
+                <div style="font-size: 11px; color: #ff4757; font-weight: 700; font-family: monospace;">ADVERSAIRE DIRECT</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="background: #0d1220; padding: 12px 16px; border-radius: 4px; border: 1px solid #1c263b;">
+            <div style="font-size: 11px; font-weight: 800; color: var(--powder-gold); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; font-family: monospace; letter-spacing: 0.5px;">
+              <i data-lucide="target" style="width: 14px; height: 14px;"></i>
+              <span>CONSEILS STRATÉGIQUES MATCHUP VS ${matchup.opponent.name.toUpperCase()}</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              ${matchup.tips.map(tip => `
+                <div style="display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: #d0d7de; line-height: 1.4;">
+                  <span style="color: #ff4757; font-weight: 800; font-family: monospace;">▸</span>
+                  <span>${tip}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Summoner Spells HTML
+    const spellsHTML = spells && spells.length ? `
+      <div style="display: flex; gap: 6px; align-items: center;">
+        ${spells.map(s => `
+          <img src="${s.icon}" style="width: 28px; height: 28px; border-radius: 4px; border: 1px solid #233047;" title="${s.name}">
+        `).join('')}
+      </div>
+    ` : '';
+
+    // Starter Items HTML
+    const starterHTML = startingItems && startingItems.length ? `
+      <div style="background: #0b0f1a; border: 1px solid #1f2a3e; padding: 12px; border-radius: 4px;">
+        <div style="color: var(--text-muted); font-size: 11px; font-weight: 800; font-family: monospace; letter-spacing: 0.5px; margin-bottom: 8px; text-transform: uppercase;">
+          OBJETS DE DÉPART (STARTER)
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          ${startingItems.map(item => `
+            <div style="display: flex; align-items: center; gap: 6px; background: #121826; padding: 4px 8px; border-radius: 4px; border: 1px solid #233047;">
+              <img src="${item.icon}" style="width: 24px; height: 24px; border-radius: 2px;" title="${item.description}">
+              <span style="font-size: 11px; font-weight: 700; color: #ccc;">${item.name}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    ` : '';
+
+    container.innerHTML = `
+      <!-- Main Build Banner -->
+      <div style="margin-bottom: 16px; background: #0b0f1a; border: 1px solid #1f2a3e; border-left: 4px solid #ff4757; border-radius: 4px; padding: 16px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <img src="${champion.icon}" style="width: 52px; height: 52px; border-radius: 4px; border: 2px solid #ff4757;" alt="${champion.name}">
+            <div>
+              <div style="font-size: 18px; font-weight: 800; color: #fff; font-family: monospace; letter-spacing: 0.5px;">
+                BUILD TACTIQUE : ${champion.name.toUpperCase()} (${displayRole})
+              </div>
+              <div style="font-size: 11px; color: var(--text-muted); font-family: monospace; margin-top: 2px;">
+                RANKED SOLO/DUO • PATCH ${patch}
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            ${spellsHTML}
+            <div style="text-align: right;">
+              <span style="font-size: 10px; background: rgba(255,71,87,0.15); color: #ff4757; padding: 3px 8px; border-radius: 2px; font-weight: 800; border: 1px solid #ff4757; font-family: monospace;">
+                LIVE ENGINE VERIFIED
+              </span>
+              <div style="font-size: 11px; color: var(--powder-cyan); font-weight: 800; margin-top: 4px; font-family: monospace;">
+                ORDRE DES SORTS : <span style="color: #fff;">${skillMaxOrder}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      ${matchupHTML}
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <!-- Left Column: Runes -->
+        <div style="background: #0b0f1a; border: 1px solid #1f2a3e; padding: 16px; border-radius: 4px;">
+          <div style="color: var(--powder-gold); font-size: 12px; font-weight: 800; font-family: monospace; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px; margin-bottom: 14px; text-transform: uppercase;">
+            <i data-lucide="sparkles" style="width: 14px; height: 14px;"></i>
+            <span>RUNES (CONFIGURATION OPTIMALE META)</span>
+          </div>
+
+          <div style="display: flex; gap: 14px;">
+            <!-- Primary Tree -->
+            <div style="flex: 1; background: #0e1422; padding: 12px; border-radius: 4px; border: 1px solid #1c263b;">
+              <div style="font-size: 11px; font-weight: 800; color: var(--powder-cyan); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; font-family: monospace;">
+                ${runes.primaryTree.icon ? `<img src="${runes.primaryTree.icon}" style="width: 18px; height: 18px;">` : ''}
+                <span>${(runes.primaryTree.name || 'PRIMARY').toUpperCase()}</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                ${runes.runes.slice(0, 4).map(r => `
+                  <div style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: #fff; font-weight: 700;">
+                    ${r.icon ? `<img src="${r.icon}" style="width: 22px; height: 22px; border-radius: 4px;">` : '<span style="width: 8px; height: 8px; border-radius: 2px; background: var(--powder-cyan);"></span>'}
+                    <span>${r.name}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Secondary Tree -->
+            <div style="flex: 1; background: #0e1422; padding: 12px; border-radius: 4px; border: 1px solid #1c263b;">
+              <div style="font-size: 11px; font-weight: 800; color: var(--powder-gold); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; font-family: monospace;">
+                ${runes.secondaryTree.icon ? `<img src="${runes.secondaryTree.icon}" style="width: 18px; height: 18px;">` : ''}
+                <span>${(runes.secondaryTree.name || 'SECONDARY').toUpperCase()}</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                ${runes.runes.slice(4, 6).map(r => `
+                  <div style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: #fff; font-weight: 700;">
+                    ${r.icon ? `<img src="${r.icon}" style="width: 22px; height: 22px; border-radius: 4px;">` : '<span style="width: 8px; height: 8px; border-radius: 2px; background: var(--powder-gold);"></span>'}
+                    <span>${r.name}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Equipment & Build Path -->
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          ${starterHTML}
+
+          <!-- Core Build -->
+          <div style="background: #0b0f1a; border: 1px solid #1f2a3e; border-left: 3px solid var(--powder-cyan); padding: 14px; border-radius: 4px;">
+            <div style="color: var(--powder-cyan); font-size: 11px; font-weight: 800; font-family: monospace; letter-spacing: 0.5px; margin-bottom: 10px; text-transform: uppercase;">
+              OBJETS ESSENTIELS (CORE BUILD)
+            </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              ${coreItems.map(item => `
+                <div style="display: flex; align-items: center; gap: 8px; background: #121826; padding: 6px 10px; border-radius: 4px; border: 1px solid #00a8e844;">
+                  <img src="${item.icon}" style="width: 30px; height: 30px; border-radius: 4px;" title="${item.description}">
+                  <span style="font-size: 11px; font-weight: 700; color: #fff;">${item.name}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Situational & Counter Build -->
+          <div style="background: #0b0f1a; border: 1px solid #1f2a3e; border-left: 3px solid var(--powder-gold); padding: 14px; border-radius: 4px;">
+            <div style="color: var(--powder-gold); font-size: 11px; font-weight: 800; font-family: monospace; letter-spacing: 0.5px; margin-bottom: 10px; text-transform: uppercase;">
+              OBJETS SITUATIONNELS & CONTRES
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              ${situationalItems.map(item => `
+                <div style="display: flex; align-items: center; gap: 6px; background: #121826; padding: 5px 8px; border-radius: 4px; border: 1px solid #1c263b;">
+                  <img src="${item.icon}" style="width: 26px; height: 26px; border-radius: 4px;" title="${item.description}">
+                  <span style="font-size: 10px; font-weight: 700; color: #ccc;">${item.name}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    refreshLucideIcons();
+  } catch (err) {
+    console.error('Failed to render build:', err);
+    container.innerHTML = `<div style="padding: 20px; color: #ff4757; font-weight: 800; background: #0b0f1a; border: 1px solid #ff4757; border-radius: 4px;">Erreur lors du chargement des données de build.</div>`;
+  }
+}
+
+async function loadUggTierList() {
+  const container = document.getElementById('ugg-tierlist-container');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div style="text-align: center; padding: 40px; color: #ff4757;">
+      <i data-lucide="loader-2" class="spin" style="width: 32px; height: 32px; margin-bottom: 10px;"></i>
+      <div style="font-weight: 800; font-size: 14px;">Chargement de la Tier List Meta des Champions...</div>
+    </div>
+  `;
+  refreshLucideIcons();
+
+  try {
+    cachedTierList = await ipcRenderer.invoke('ugg:get-tier-list', 'emerald_plus');
+    filterUggTierList('ALL');
+  } catch (err) {
+    console.error('Failed to load tier list:', err);
+    container.innerHTML = `<div style="padding: 20px; color: #e63946;">Impossible de charger la Tier List.</div>`;
+  }
+}
+
+function filterUggTierList(role) {
+  const container = document.getElementById('ugg-tierlist-container');
+  if (!container) return;
+
+  const list = role === 'ALL' ? cachedTierList : cachedTierList.filter(item => item.role.toUpperCase() === role.toUpperCase());
+
+  if (list.length === 0) {
+    container.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--text-muted);">Aucune donnée de Tier List pour le rôle "${role}".</div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="dashboard-card" style="background: #0d111a; padding: 0; overflow: hidden;">
+      <table class="leaderboard-table" style="width: 100%;">
+        <thead>
+          <tr style="background: #141926; text-align: left; font-size: 11px; text-transform: uppercase; color: var(--text-muted);">
+            <th style="padding: 12px 16px;">Rang</th>
+            <th style="padding: 12px 16px;">Champion</th>
+            <th style="padding: 12px 16px;">Rôle</th>
+            <th style="padding: 12px 16px;">Tier</th>
+            <th style="padding: 12px 16px;">Win Rate</th>
+            <th style="padding: 12px 16px;">Matchs</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${list.slice(0, 50).map((c, index) => {
+            const tierColor = c.tier === 'S+' ? '#ff4757' : c.tier === 'S' ? 'var(--powder-cyan)' : c.tier === 'A' ? '#2ecc71' : c.tier === 'B' ? 'var(--powder-gold)' : '#8d9bb0';
+            return `
+              <tr class="leaderboard-rowugg" data-champ="${c.name}" style="cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.04);">
+                <td style="padding: 10px 16px; font-weight: 800; color: var(--text-muted);">${index + 1}</td>
+                <td style="padding: 10px 16px;">
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <img src="${c.icon}" style="width: 32px; height: 32px; border-radius: 8px;" alt="${c.name}">
+                    <span style="font-weight: 800; color: #fff;">${c.name}</span>
+                  </div>
+                </td>
+                <td style="padding: 10px 16px;"><span class="edit-badge" style="font-size: 10px; background: rgba(0,168,232,0.15); color: var(--powder-cyan);">${c.role}</span></td>
+                <td style="padding: 10px 16px;"><span style="font-weight: 900; font-size: 13px; color: ${tierColor};">${c.tier}</span></td>
+                <td style="padding: 10px 16px; font-weight: 800; color: ${parseFloat(c.winRate) >= 50 ? '#2ecc71' : '#e63946'};">${c.winRate}</td>
+                <td style="padding: 10px 16px; font-size: 11px; color: var(--text-muted);">${c.matchesTotal.toLocaleString()}</td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  document.querySelectorAll('.leaderboard-rowugg').forEach(row => {
+    row.addEventListener('click', () => {
+      const champ = row.getAttribute('data-champ');
+      const buildTabBtn = document.querySelector('[data-ugg-tab="ugg-tab-builds"]');
+      if (buildTabBtn) buildTabBtn.click();
+      const input = document.getElementById('ugg-champ-input');
+      if (input) input.value = champ;
+      loadUggBuild(champ);
+    });
+  });
+
+  refreshLucideIcons();
+}
+
+async function loadUggPlayerProfile(queryStr, region = 'EUW') {
+  const container = document.getElementById('ugg-player-container');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div style="text-align: center; padding: 40px; color: #ff4757;">
+      <i data-lucide="loader-2" class="spin" style="width: 32px; height: 32px; margin-bottom: 10px;"></i>
+      <div style="font-weight: 800; font-size: 14px;">Recherche du profil en direct pour ${queryStr}...</div>
+    </div>
+  `;
+  refreshLucideIcons();
+
+  let gameName = queryStr.trim();
+  let tagLine = region || 'EUW';
+
+  if (queryStr.includes('#')) {
+    const parts = queryStr.split('#');
+    gameName = parts[0].trim();
+    tagLine = parts[1].trim();
+  }
+
+  try {
+    const profile = await ipcRenderer.invoke('ugg:get-player-profile', { gameName, tagLine, region });
+    if (!profile) {
+      container.innerHTML = `<div style="padding: 20px; color: #e63946; font-weight: 800;">Impossible de trouver le profil pour ${queryStr}.</div>`;
+      return;
+    }
+
+    const allBadgesAndTags = [...(profile.badges || []), ...(profile.tags || [])];
+
+    container.innerHTML = `
+      <div class="dashboard-card" style="background: #0f1422; border-color: rgba(255,71,87,0.4); margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <img src="${profile.profileIconUrl}" style="width: 60px; height: 60px; border-radius: 14px; border: 2px solid #ff4757;" alt="Profile Icon">
+            <div>
+              <div style="font-size: 22px; font-weight: 900; color: #fff;">
+                <span>${profile.gameName}</span>
+                <span style="font-size: 14px; color: var(--powder-cyan);">#${profile.tagLine}</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Level ${profile.summonerLevel} • Region ${profile.region} • PowderHelpMe Live Data</div>
+              ${allBadgesAndTags.length > 0 ? `
+                <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;">
+                  ${allBadgesAndTags.map(b => `
+                    <span style="background: ${b.bg || 'rgba(255,255,255,0.08)'}; color: ${b.color || '#fff'}; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; border: 1px solid ${b.color || 'rgba(255,255,255,0.15)'};">
+                      ${b.text}
+                    </span>
+                  `).join('')}
+                </div>
+              ` : ''}
+            </div>
+          </div>
+
+          <div style="text-align: right;">
+            <div style="font-size: 18px; font-weight: 900; color: var(--powder-gold);">${profile.rankedSolo?.tier} ${profile.rankedSolo?.rank}</div>
+            <div style="font-size: 12px; color: #2ecc71; font-weight: 800;">${profile.rankedSolo?.lp} LP (${profile.rankedSolo?.winrate} Win Rate)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-card" style="background: #111625;">
+        <div class="card-title" style="color: #ff4757; font-size: 14px; font-weight: 800;">Top Played Champions</div>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 12px;">
+          ${profile.topChampions.map(c => `
+            <div style="background: #0b0e17; padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.06); text-align: center;">
+              <img src="${c.icon}" style="width: 44px; height: 44px; border-radius: 10px; margin-bottom: 6px;" alt="${c.name}">
+              <div style="font-weight: 800; font-size: 13px; color: #fff;">${c.name}</div>
+              <div style="font-size: 11px; color: var(--powder-cyan); font-weight: 700; margin-top: 2px;">${c.totalMatches} Games • ${c.winrate} WR</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+
+    refreshLucideIcons();
+  } catch (err) {
+    console.error('Failed to load profile:', err);
+    container.innerHTML = `<div style="padding: 20px; color: #e63946;">Failed to load profile.</div>`;
+  }
+}
+
 
 // Initial Startup Loads
 loadFollowedPlayers();
 loadProfile();
+updateDiscordRpcUI();

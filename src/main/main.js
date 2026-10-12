@@ -1,9 +1,21 @@
 const { app, BrowserWindow, ipcMain, globalShortcut } = require('electron');
 const path = require('path');
+const fs = require('fs');
+
+// Enforce Single Instance Lock to prevent multiple Electron instances from running
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  console.log('[Main] Another instance of PowderHelpMe is already running. Exiting redundant instance...');
+  app.quit();
+  process.exit(0);
+}
+
 const Store = require('./store');
 const LiveClientApi = require('./liveClientApi');
 const LcuConnector = require('./lcuConnector');
 const RiotApi = require('./riotApi');
+const DiscordPresence = require('./discordPresence');
+const UggService = require('./uggService');
 const { analyzeBuildRecommendations } = require('./buildEngine');
 const { computeBadges } = require('./badgeEngine');
 
@@ -38,13 +50,15 @@ const store = new Store({
     build: { visible: true, x: 50, y: 530, width: 300, height: 210 },
     lobby: { visible: true, x: 350, y: 50, width: 320, height: 220 }
   },
-  demoMode: false
+  demoMode: false,
+  discordPresence: { enabled: true }
 });
 
 let dashboardWindow = null;
 const overlayWindows = {};
 const liveApi = new LiveClientApi();
 const lcuConnector = new LcuConnector();
+const discordPresence = new DiscordPresence();
 let pollInterval = null;
 
 function createDashboardWindow() {
@@ -184,14 +198,34 @@ function startPolling() {
     if (dashboardWindow && !dashboardWindow.isDestroyed()) {
       dashboardWindow.webContents.send('live-game-data', payload);
     }
+
+    // Update Discord Rich Presence Status
+    discordPresence.updatePresence(liveData, store.get('userAccount'));
   }, 1000);
 }
+
+function stopPolling() {
+  if (pollInterval) {
+    clearInterval(pollInterval);
+    pollInterval = null;
+  }
+}
+
+app.on('second-instance', () => {
+  if (dashboardWindow) {
+    if (dashboardWindow.isMinimized()) dashboardWindow.restore();
+    dashboardWindow.focus();
+  }
+});
 
 app.whenReady().then(async () => {
   createDashboardWindow();
   // Note: Floating in-game overlays paused per user request. App runs as standalone consultable stats dashboard.
   // createAllOverlayWindows();
   startPolling();
+
+  const discordConfig = store.get('discordPresence') || { enabled: true };
+  discordPresence.setEnabled(discordConfig.enabled !== false);
 
   // Register shortcut for toggling edit/click-through mode
   const hotkey = store.get('hotkey') || 'CommandOrControl+Shift+O';
@@ -206,11 +240,20 @@ app.whenReady().then(async () => {
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  stopPolling();
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
 });
 
 app.on('will-quit', () => {
-  globalShortcut.unregisterAll();
+  stopPolling();
+  try { globalShortcut.unregisterAll(); } catch(e){}
+  try { discordPresence.disconnect(); } catch(e){}
+});
+
+app.on('quit', () => {
+  process.exit(0);
 });
 
 // IPC Handlers
@@ -263,6 +306,7 @@ ipcMain.on('reset-widget-positions', () => {
 
 const initialApiKey = store.get('userAccount')?.apiKey || process.env.RIOT_API_KEY || '';
 const riotApi = new RiotApi(initialApiKey);
+const uggService = new UggService();
 
 ipcMain.handle('get-user-account', () => {
   const acc = store.get('userAccount') || {};
@@ -277,20 +321,53 @@ ipcMain.handle('get-user-account', () => {
 
 ipcMain.handle('get-summoner-profile', async (event, query) => {
   const account = query || store.get('userAccount') || { gameName: "Lesbian princess", tagLine: "UwU", region: "EUW" };
+  const isRefresh = query?.forceRefresh || false;
   const apiKey = account.apiKey || store.get('userAccount')?.apiKey || process.env.RIOT_API_KEY || '';
   if (apiKey) riotApi.setApiKey(apiKey);
 
-  const profileData = await riotApi.getSummonerByRiotId(account.gameName, account.tagLine, account.region || 'EUW');
-  const badges = computeBadges({
-    csPerMin: 8.2,
-    dpm: 680,
-    kda: 3.8,
-    winrate7d: profileData.rankedSolo?.winrate || 51,
-    visionScorePerMin: 1.6,
-    mainChampPickrate: 55
-  });
+  if (isRefresh) {
+    console.log(`[Main] Triggering u.gg updatePlayerProfile for ${account.gameName}#${account.tagLine}...`);
+    try {
+      await uggService.requestProfileUpdate(account.gameName, account.tagLine, account.region || 'EUW');
+      // Wait 1.5s for u.gg server to process the update before fetching
+      await new Promise(r => setTimeout(r, 1500));
+    } catch (e) {
+      console.warn('[Main] u.gg requestProfileUpdate error:', e.message);
+    }
+  }
 
-  return { ...profileData, badges };
+  try {
+    const profileData = await riotApi.getSummonerByRiotId(account.gameName, account.tagLine, account.region || 'EUW');
+    const badges = computeBadges({
+      csPerMin: 8.2,
+      dpm: 680,
+      kda: 3.8,
+      winrate7d: profileData.rankedSolo?.winrate || 51,
+      visionScorePerMin: 1.6,
+      mainChampPickrate: 55
+    });
+    return { ...profileData, badges };
+  } catch (err) {
+    console.log('[Main] Riot API skipped/failed, using PowderHelpMe live profile fallback:', err.message);
+    const uggProfile = await uggService.getPlayerProfile(account.gameName, account.tagLine, account.region || 'EUW');
+    return {
+      ...uggProfile,
+      source: 'PowderHelpMe'
+    };
+  }
+});
+
+// U.GG IPC Handlers
+ipcMain.handle('ugg:get-build', async (event, { championName, role, opponentName }) => {
+  return await uggService.getChampionBuild(championName, role, opponentName);
+});
+
+ipcMain.handle('ugg:get-tier-list', async (event, tier) => {
+  return await uggService.getChampionTierList(tier || 'emerald_plus');
+});
+
+ipcMain.handle('ugg:get-player-profile', async (event, { gameName, tagLine, region }) => {
+  return await uggService.getPlayerProfile(gameName, tagLine, region || 'EUW');
 });
 
 ipcMain.handle('get-more-matches', async (event, { puuid, continentalHost, start, count }) => {
@@ -298,7 +375,7 @@ ipcMain.handle('get-more-matches', async (event, { puuid, continentalHost, start
 });
 
 ipcMain.handle('get-leaderboard', async (event, region) => {
-  return await riotApi.getLeaderboard(region || 'EUW');
+  return await uggService.getLeaderboard(region || 'EUW');
 });
 
 ipcMain.handle('save-user-account', async (event, accountData) => {
@@ -314,67 +391,42 @@ ipcMain.handle('generate-verification-challenge', (event, { gameName, tagLine })
   return riotApi.generateVerificationChallenge(gameName, tagLine);
 });
 
+// Followed Players IPC Handlers
 ipcMain.handle('get-followed-players', () => {
-  return store.get('followedPlayers') || [
-    {
-      gameName: "Lesbian princess",
-      tagLine: "UwU",
-      region: "EUW",
-      rank: "Master 1508 LP",
-      winrate: "51%",
-      isLive: true,
-      liveChamp: "Jinx",
-      gameTime: "18:42",
-      icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/champion/Jinx.png"
-    },
-    {
-      gameName: "Faker",
-      tagLine: "KR1",
-      region: "KR",
-      rank: "Challenger 1840 LP",
-      winrate: "64%",
-      isLive: false,
-      lastSeen: "Il y a 2h",
-      icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/champion/Ahri.png"
-    }
-  ];
+  return store.get('followedPlayers') || [];
 });
 
 ipcMain.handle('toggle-follow-player', (event, player) => {
-  let list = store.get('followedPlayers') || [
-    {
-      gameName: "Lesbian princess",
-      tagLine: "UwU",
-      region: "EUW",
-      rank: "Master 1508 LP",
-      winrate: "51%",
-      isLive: true,
-      liveChamp: "Jinx",
-      gameTime: "18:42",
-      icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/champion/Jinx.png"
-    },
-    {
-      gameName: "Faker",
-      tagLine: "KR1",
-      region: "KR",
-      rank: "Challenger 1840 LP",
-      winrate: "64%",
-      isLive: false,
-      lastSeen: "Il y a 2h",
-      icon: "https://ddragon.leagueoflegends.com/cdn/14.20.1/img/champion/Ahri.png"
-    }
-  ];
-  
-  const index = list.findIndex(p => p.gameName.toLowerCase() === player.gameName.toLowerCase() && p.tagLine.toLowerCase() === player.tagLine.toLowerCase());
-  
-  if (index > -1) {
-    list.splice(index, 1);
-  } else {
-    list.push(player);
+  if (!player || !player.gameName || !player.tagLine) {
+    return store.get('followedPlayers') || [];
   }
-  
-  store.set('followedPlayers', list);
-  return list;
+  const current = store.get('followedPlayers') || [];
+  const cleanName = String(player.gameName).trim();
+  const cleanTag = String(player.tagLine).trim();
+
+  const index = current.findIndex(p =>
+    p.gameName && p.gameName.toLowerCase() === cleanName.toLowerCase() &&
+    p.tagLine && p.tagLine.toLowerCase() === cleanTag.toLowerCase()
+  );
+
+  if (index >= 0) {
+    current.splice(index, 1);
+  } else {
+    current.push({
+      gameName: cleanName,
+      tagLine: cleanTag,
+      region: player.region || 'EUW',
+      rank: player.rank || 'Unranked',
+      winrate: player.winrate || '0%',
+      isLive: player.isLive || false,
+      liveChamp: player.liveChamp || '',
+      gameTime: player.gameTime || '',
+      icon: player.icon || 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/23.jpg'
+    });
+  }
+
+  store.set('followedPlayers', current);
+  return current;
 });
 
 ipcMain.handle('verify-account-icon', async (event, { gameName, tagLine, requiredIconId, region }) => {
@@ -394,10 +446,34 @@ ipcMain.handle('get-settings', () => {
   return store.data;
 });
 
+ipcMain.handle('get-discord-settings', () => {
+  const settings = store.get('discordPresence') || { enabled: true };
+  return {
+    enabled: settings.enabled !== false,
+    isConnected: discordPresence.isConnected
+  };
+});
+
+ipcMain.handle('toggle-discord-presence', (event, enabled) => {
+  const currentSettings = store.get('discordPresence') || { enabled: true };
+  const targetEnabled = enabled !== undefined ? enabled : !currentSettings.enabled;
+  store.set('discordPresence', { ...currentSettings, enabled: targetEnabled });
+  discordPresence.setEnabled(targetEnabled);
+  return { enabled: targetEnabled, isConnected: discordPresence.isConnected };
+});
+
 ipcMain.on('close-dashboard', () => {
-  if (dashboardWindow) dashboardWindow.close();
+  stopPolling();
+  try { discordPresence.disconnect(); } catch(e){}
+  if (dashboardWindow && !dashboardWindow.isDestroyed()) {
+    dashboardWindow.close();
+  }
+  app.quit();
+  setTimeout(() => process.exit(0), 100);
 });
 
 ipcMain.on('minimize-dashboard', () => {
-  if (dashboardWindow) dashboardWindow.minimize();
+  if (dashboardWindow && !dashboardWindow.isDestroyed()) {
+    dashboardWindow.minimize();
+  }
 });

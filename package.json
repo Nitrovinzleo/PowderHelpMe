@@ -4,6 +4,7 @@
   "description": "PowderHelpMe.exe - Overlay et Dashboard de statistiques League of Legends style Powder (Arcane)",
   "main": "src/main/main.js",
   "scripts": {
+    "prebuild": "cmd /c \"taskkill /f /im electron.exe /im PowderHelpMe.exe 2>nul || exit /b 0\"",
     "start": "electron .",
     "dev": "electron .",
     "build": "electron-builder --win",
@@ -24,7 +25,8 @@
         "nsis",
         "portable"
       ],
-      "icon": "src/renderer/assets/logo.png"
+      "icon": "src/renderer/assets/logo.png",
+      "forceCodeSigning": false
     },
     "nsis": {
       "oneClick": false,
@@ -44,6 +46,7 @@
   "license": "MIT",
   "dependencies": {
     "chart.js": "^4.4.8",
+    "discord-rpc": "^4.0.1",
     "lucide": "^1.52.0"
   },
   "devDependencies": {
